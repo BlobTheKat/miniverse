@@ -1,6 +1,9 @@
 #version 410
-out vec2 pos;
+layout(location=0) in vec3 pos;
+uniform mat4 m;
+uniform mat3x4 o;
+out vec3 vpos;
 void main(){
-	pos = vec2(gl_VertexID&1, gl_VertexID>>1);
-	gl_Position = vec4(pos-.5, 0, 1);
+	vpos = vec4(pos,1)*o;
+	gl_Position = vec4(vpos,1)*m;
 }

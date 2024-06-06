@@ -2,7 +2,7 @@
 # Prepare build opts
 if [[ $OSTYPE == "msys" ]]; then
 SDL_STATIC_LINK_FLAGS="-Lsdl2/lib -lmingw32 -lSDL2 -lSDL2main -Wl,--dynamicbase -Wl,--nxcompat -Wl,--high-entropy-va -lm -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lsetupapi -lversion -luuid -static -Dmain=SDL_main"
-GCC_OPTS="-Wno-overflow -fwrapv"
+GCC_OPTS="-Wno-overflow -fwrapv -Wno-narrowing"
 if [ $1 ]; then
 GCC_OPTS="$GCC_OPTS -O3 -mwindows -DRELEASE=$1"
 fi
@@ -10,7 +10,7 @@ fi
 if [ ! -d /c/mingw64 ]; then
 echo -e "\033[33mDownloading mingw64...\nINFO: This differs from MinGW in that it expects and produces x64 (64 bit) rather than x86 (32 bit)\n32 bit builds may be supported in the future\033[m"
 curl -L https://github.com/brechtsanders/winlibs_mingw/releases/download/14.1.0posix-18.1.5-11.0.1-ucrt-r1/winlibs-x86_64-posix-seh-gcc-14.1.0-llvm-18.1.5-mingw-w64ucrt-11.0.1-r1.7z > mingw64.7z
-7z x mingw64.7z -o/c/mingw64
+7z x mingw64.7z -o/c
 rm mingw64.7z
 echo -e "\033[33mIMPORTANT: If windows defender detects a threat, this is a false positive. Allow it if you want to make use of all of mingw64's features, however this is not required to build successfully"
 fi
@@ -27,7 +27,9 @@ GCC_OPTS=".icon.res $GCC_OPTS"
 fi
 /c/mingw64/bin/g++.exe src/main.cpp glad/src/gl.c -Wl,--strip-all -ffunction-sections -Isdl2/include -Iglad/include $GCC_OPTS $SDL_STATIC_LINK_FLAGS -Wl,--gc-sections -Wl,--format=binary -Wl,assets/* -Wl,--format=default -o main
 A=$?
+if [ -f icon.ico ]; then
 rm .icon.res
+fi
 else
 echo Unix builds coming soon
 fi

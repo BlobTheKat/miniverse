@@ -1,33 +1,7 @@
 #include <SDL2/sdl.h>
 #include <glad/gl.h>
-#include <stdio.h>
-#define _LARGEFILE64_SOURCE
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-
-typedef uint8_t u8;
-typedef int8_t i8;
-typedef uint16_t u16;
-typedef int16_t i16;
-typedef uint32_t u32;
-typedef int32_t i32;
-typedef uint64_t u64;
-typedef int64_t i64;
-typedef float f32;
-typedef double f64;
-#if UINTPTR_MAX == UINT64_MAX
-typedef double fsize;
-#else
-typedef float fsize;
-#endif
-typedef size_t usize;
-typedef ssize_t isize;
-typedef char byte;
+#include <chrono>
+#include "defs.cpp"
 
 #define asset(a) ([]{extern char _binary_assets_ ## a ## _start[],_binary_assets_ ## a ## _end[];return buffer{_binary_assets_ ## a ## _start, (size_t)(_binary_assets_ ## a ## _end-_binary_assets_ ## a ## _start)};}());
 typedef struct{char* data; size_t size;} buffer;
@@ -83,7 +57,12 @@ GLuint makePipeline(buffer vert, buffer frag){
 
 inline void init();
 inline void frame();
-
+bool playing;
+double t, dt;
+struct{
+	int width, height;
+} window;
+vec3 mouse;
 int main(int argc, char** argv){
 	if(SDL_Init(SDL_INIT_EVERYTHING) < 0) return printf("Init fail: %s\n", SDL_GetError());
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
@@ -94,31 +73,56 @@ int main(int argc, char** argv){
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 32);
 	int size; SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &size);
 	if(size < 24) SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-	SDL_Window* window = SDL_CreateWindow("Womp womp simulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-	SDL_GLContext gl = SDL_GL_CreateContext(window);
-	SDL_GL_MakeCurrent(window, gl);
+	SDL_Window* win = SDL_CreateWindow("Womp womp simulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+	SDL_GLContext gl = SDL_GL_CreateContext(win);
+	SDL_GL_MakeCurrent(win, gl);
 	gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress);
 	#ifndef RELEASE
 	printf("Loaded OpenGL %s\n", glGetString(GL_VERSION));
 	#endif
 	SDL_GL_SetSwapInterval(1);
 	init();
+	uint64_t start = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+	SDL_SetRelativeMouseMode(SDL_TRUE);
+	SDL_GetWindowSizeInPixels(win, &window.width, &window.height);
+	glViewport(0, 0, window.width, window.height);
 	while(1){
 		SDL_Event e;
+		mouse = 0;
 		while(SDL_PollEvent(&e)) switch(e.type){
 			case SDL_QUIT: return 0;
+			case SDL_KEYDOWN:
+			if(e.key.keysym.sym == SDLK_ESCAPE){
+				SDL_SetRelativeMouseMode(SDL_FALSE);
+				break;
+			}
+			break;
+			case SDL_MOUSEMOTION:
+			mouse.x += e.motion.xrel;
+			mouse.y -= e.motion.yrel;
+			break;
+			case SDL_MOUSEWHEEL:
+			mouse.z += e.wheel.preciseY;
+			break;
+			case SDL_MOUSEBUTTONDOWN:
+			SDL_SetRelativeMouseMode(SDL_TRUE);
+			playing = true;
+			break;
 			case SDL_WINDOWEVENT:
 			if(e.window.event==SDL_WINDOWEVENT_RESIZED){
-				int w, h;
-				SDL_GetWindowSizeInPixels(window, &w, &h);
-				glViewport(0, 0, w, h);
+				SDL_GetWindowSizeInPixels(win, &window.width, &window.height);
+				glViewport(0, 0, window.width, window.height);
 			}
 			break;
 		}
-		glClearColor(0., 0., 0., 0.);
+		double ot=t;
+		t = double(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count()-start)*1e-9;
+		dt = t-ot;
+		glClearColor(0.f, 0., 0., 0.);
 		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		playing = SDL_GetRelativeMouseMode();
 		frame();
-		SDL_GL_SwapWindow(window);
+		SDL_GL_SwapWindow(win);
 	}
 	return 0;
 }
