@@ -2,6 +2,7 @@
 in vec3 vpos;
 out vec4 color;
 uniform vec4 col;
+uniform float depthCoeff;
 void main(){
 	vec3 a = dFdx(vpos), b = dFdy(vpos);
 	a = abs(normalize(cross(a, b)));

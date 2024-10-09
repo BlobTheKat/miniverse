@@ -25,7 +25,7 @@ echo "id ICON icon.ico" > .rc
 rm .rc
 GCC_OPTS=".icon.res $GCC_OPTS"
 fi
-/c/mingw64/bin/g++.exe src/main.cpp glad/src/gl.c -Wl,--strip-all -ffunction-sections -Isdl2/include -Iglad/include $GCC_OPTS $SDL_STATIC_LINK_FLAGS -Wl,--gc-sections -Wl,--format=binary -Wl,assets/* -Wl,--format=default -o main
+/c/mingw64/bin/g++.exe -std=c++20 -O3 src/main.cpp glad/src/gl.c -Wl,--strip-all -ffunction-sections -Isdl2/include -Iglad/include $GCC_OPTS $SDL_STATIC_LINK_FLAGS -Wl,--gc-sections -Wl,--format=binary -Wl,assets/* -Wl,--format=default -o main
 A=$?
 if [ -f icon.ico ]; then
 rm .icon.res

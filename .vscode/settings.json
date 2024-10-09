@@ -1,6 +1,16 @@
 {
-	"C_Cpp.errorSquiggles": "enabled",
 	"files.associations": {
-		"cmath": "cpp"
+		"tuple": "cpp",
+		"xtr1common": "cpp",
+		"utility": "cpp",
+		"cstdlib": "cpp",
+		"xutility": "cpp",
+		"cmath": "cpp",
+		"vector": "cpp",
+		"xstring": "cpp",
+		"ratio": "cpp",
+		"algorithm": "cpp",
+		"chrono": "cpp",
+		"limits": "cpp"
 	}
 }

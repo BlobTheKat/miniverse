@@ -1,6 +1,8 @@
 #include <SDL2/sdl.h>
 #include <glad/gl.h>
 #include <chrono>
+#include <pthread.h>
+#include <iostream>
 #include "defs.cpp"
 
 #define asset(a) ([]{extern char _binary_assets_ ## a ## _start[],_binary_assets_ ## a ## _end[];return buffer{_binary_assets_ ## a ## _start, (size_t)(_binary_assets_ ## a ## _end-_binary_assets_ ## a ## _start)};}());
@@ -60,9 +62,45 @@ inline void frame();
 bool playing;
 double t, dt;
 struct{
+	int x, y;
 	int width, height;
 } window;
-vec3 mouse;
+vec4 mouse;
+SDL_mutex* mut;
+int render(void* a){
+	SDL_Window* win = (SDL_Window*) a;
+	SDL_GLContext gl = SDL_GL_CreateContext(win);
+	SDL_GL_MakeCurrent(win, gl);
+	gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress);
+	#ifndef RELEASE
+	printf("Loaded OpenGL %s\n", glGetString(GL_VERSION));
+	#endif
+	if(SDL_GL_SetSwapInterval(-1)) SDL_GL_SetSwapInterval(1);
+	init();
+	//SDL_SetRelativeMouseMode(SDL_TRUE);
+	//SDL_GetWindowSizeInPixels(win, &window.width, &window.height);
+	//glViewport(0, 0, window.width, window.height);
+	uint64_t start = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+	while(1){
+		double ot=t;
+		t = double(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count()-start)*1e-9;
+		dt = t-ot;
+		SDL_GetWindowSizeInPixels(win, &window.width, &window.height);
+		SDL_GetWindowPosition(win, &window.x, &window.y);
+		int w, h; SDL_GL_GetDrawableSize(win, &w, &h);
+		glViewport(0, 0, w, h);
+		glClearColor(.2, .6, 1, 1);
+		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		playing = SDL_GetRelativeMouseMode();
+		SDL_LockMutex(mut);
+		frame();
+		mouse = 0;
+		SDL_UnlockMutex(mut);
+		SDL_GL_SwapWindow(win);
+	}
+	return 0;
+}
+
 int main(int argc, char** argv){
 	if(SDL_Init(SDL_INIT_EVERYTHING) < 0) return printf("Init fail: %s\n", SDL_GetError());
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
@@ -74,27 +112,21 @@ int main(int argc, char** argv){
 	int size; SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &size);
 	if(size < 24) SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_Window* win = SDL_CreateWindow("Womp womp simulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-	SDL_GLContext gl = SDL_GL_CreateContext(win);
-	SDL_GL_MakeCurrent(win, gl);
-	gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress);
-	#ifndef RELEASE
-	printf("Loaded OpenGL %s\n", glGetString(GL_VERSION));
-	#endif
-	SDL_GL_SetSwapInterval(1);
-	init();
-	uint64_t start = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-	SDL_SetRelativeMouseMode(SDL_TRUE);
-	SDL_GetWindowSizeInPixels(win, &window.width, &window.height);
-	glViewport(0, 0, window.width, window.height);
+	mut = SDL_CreateMutex();
+	SDL_CreateThread(render, NULL, win);
 	while(1){
 		SDL_Event e;
-		mouse = 0;
-		while(SDL_PollEvent(&e)) switch(e.type){
+		SDL_WaitEvent(&e);
+		SDL_LockMutex(mut);
+		switch(e.type){
 			case SDL_QUIT: return 0;
 			case SDL_KEYDOWN:
 			if(e.key.keysym.sym == SDLK_ESCAPE){
+				SDL_SetWindowFullscreen(win, SDL_FALSE);
 				SDL_SetRelativeMouseMode(SDL_FALSE);
 				break;
+			}else if(e.key.keysym.sym == SDLK_F11){
+				SDL_SetWindowFullscreen(win, (SDL_GetWindowFlags(win)&SDL_WINDOW_FULLSCREEN_DESKTOP)?0:SDL_WINDOW_FULLSCREEN_DESKTOP);
 			}
 			break;
 			case SDL_MOUSEMOTION:
@@ -102,27 +134,15 @@ int main(int argc, char** argv){
 			mouse.y -= e.motion.yrel;
 			break;
 			case SDL_MOUSEWHEEL:
-			mouse.z += e.wheel.preciseY;
+			mouse.z += e.wheel.preciseX;
+			mouse.w += e.wheel.preciseY;
 			break;
 			case SDL_MOUSEBUTTONDOWN:
 			SDL_SetRelativeMouseMode(SDL_TRUE);
 			playing = true;
 			break;
-			case SDL_WINDOWEVENT:
-			if(e.window.event==SDL_WINDOWEVENT_RESIZED){
-				SDL_GetWindowSizeInPixels(win, &window.width, &window.height);
-				glViewport(0, 0, window.width, window.height);
-			}
-			break;
 		}
-		double ot=t;
-		t = double(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count()-start)*1e-9;
-		dt = t-ot;
-		glClearColor(0.f, 0., 0., 0.);
-		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		playing = SDL_GetRelativeMouseMode();
-		frame();
-		SDL_GL_SwapWindow(win);
+		SDL_UnlockMutex(mut);
 	}
 	return 0;
 }
