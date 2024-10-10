@@ -5,7 +5,7 @@ const buffer vert = asset(basic_vert);
 const buffer frag = asset(basic_frag);
 
 GLint mUni, oUni, cUni, dcUni;
-inline void init(){
+inline void init(SDL_Window* win){
 	GLuint p = makePipeline(vert, frag);
 	mUni = glGetUniformLocation(p, "m");
 	oUni = glGetUniformLocation(p, "o");

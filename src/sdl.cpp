@@ -1,7 +1,6 @@
-#include <SDL2/sdl.h>
+#include <SDL2/SDL.h>
 #include <glad/gl.h>
 #include <chrono>
-#include <pthread.h>
 #include <iostream>
 #include "defs.cpp"
 
@@ -52,12 +51,12 @@ GLuint makePipeline(buffer vert, buffer frag){
 		free(error);
 		return p;
 	}
-	printf("\x1b[32mProgram linked successfully (source %d B)\x1b[m\n", vert.size+frag.size);
+	printf("\x1b[32mProgram linked successfully (source %zd B)\x1b[m\n", vert.size+frag.size);
 	#endif
 	return p;
 }
 
-inline void init();
+inline void init(SDL_Window*);
 inline void frame();
 bool playing;
 double t, dt;
@@ -76,7 +75,7 @@ int render(void* a){
 	printf("Loaded OpenGL %s\n", glGetString(GL_VERSION));
 	#endif
 	if(SDL_GL_SetSwapInterval(-1)) SDL_GL_SetSwapInterval(1);
-	init();
+	init(win);
 	//SDL_SetRelativeMouseMode(SDL_TRUE);
 	//SDL_GetWindowSizeInPixels(win, &window.width, &window.height);
 	//glViewport(0, 0, window.width, window.height);
@@ -121,6 +120,7 @@ int main(int argc, char** argv){
 		switch(e.type){
 			case SDL_QUIT: return 0;
 			case SDL_KEYDOWN:
+			if(e.key.repeat) break;
 			if(e.key.keysym.sym == SDLK_ESCAPE){
 				SDL_SetWindowFullscreen(win, SDL_FALSE);
 				SDL_SetRelativeMouseMode(SDL_FALSE);

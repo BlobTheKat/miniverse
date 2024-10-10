@@ -12,6 +12,7 @@
 #include <type_traits>
 #include <tuple>
 #include <algorithm>
+#include <cstring>
 using namespace std;
 
 #ifdef __INTELLISENSE__
