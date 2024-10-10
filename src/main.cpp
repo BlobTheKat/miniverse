@@ -28,7 +28,6 @@ inline void init(SDL_Window* win){
 	glEnable(GL_STENCIL_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-	glProvokingVertex(GL_LAST_VERTEX_CONVENTION);
 }
 
 vec2 looking; f32 dist = 4;

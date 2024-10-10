@@ -61,7 +61,7 @@ inline void frame();
 bool playing;
 double t, dt;
 struct{
-	int x, y;
+	int x, y, w, h;
 	int width, height;
 } window;
 vec4 mouse;
@@ -76,18 +76,15 @@ int render(void* a){
 	#endif
 	if(SDL_GL_SetSwapInterval(-1)) SDL_GL_SetSwapInterval(1);
 	init(win);
-	//SDL_SetRelativeMouseMode(SDL_TRUE);
-	//SDL_GetWindowSizeInPixels(win, &window.width, &window.height);
-	//glViewport(0, 0, window.width, window.height);
 	uint64_t start = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 	while(1){
 		double ot=t;
 		t = double(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count()-start)*1e-9;
 		dt = t-ot;
-		SDL_GetWindowSizeInPixels(win, &window.width, &window.height);
+		SDL_GetWindowSize(win, &window.w, &window.h);
 		SDL_GetWindowPosition(win, &window.x, &window.y);
-		int w, h; SDL_GL_GetDrawableSize(win, &w, &h);
-		glViewport(0, 0, w, h);
+		SDL_GL_GetDrawableSize(win, &window.width, &window.height);
+		glViewport(0, 0, window.width, window.height);
 		glClearColor(.2, .6, 1, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		playing = SDL_GetRelativeMouseMode();

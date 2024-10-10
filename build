@@ -43,7 +43,7 @@ fi
 
 # Build
 clear
-g++ -I.bin/include -Wfatal-errors -std=c++20 -O3 src/main.cpp .bin/src/gl.c -Wl,--strip-all -ffunction-sections $GCC_OPTS $SDL_STATIC_LINK_FLAGS -Wl,--gc-sections -Wl,--format=binary -Wl,assets/basic.frag -Wl,assets/basic.vert -Wl,--format=default -o main
+g++ -I.bin/include -Wfatal-errors -std=c++20 -O3 src/main.cpp .bin/src/gl.c -Wl,--strip-all -ffunction-sections $GCC_OPTS $SDL_STATIC_LINK_FLAGS -Wl,--gc-sections -Wl,--format=binary -Wl,$(find assets/*) -Wl,--format=default -o main
 A=$?
 
 if [ -f .icon.res ]; then rm .icon.res; fi
