@@ -1,2 +1,5 @@
 .bin/**
 .vscode/settings.json
+main.exe
+main
+main.elf
