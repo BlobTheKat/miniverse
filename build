@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/usr/bin/bash
 
 # Prepare build opts
 GCC_OPTS="-Wno-overflow -fwrapv -Wno-narrowing"
@@ -6,26 +6,11 @@ if [ "$OSTYPE" = "msys" ]; then
 	if ! cmake --version >/dev/null; then scoop install cmake; fi
 	if ! upx -V >/dev/null; then scoop install upx; fi
 	if ! g++ -v 2>/dev/null; then scoop install mingw; fi
-
-	SDL_STATIC_LINK_FLAGS="-L.bin/lib -lmingw32 -lSDL2 -lSDL2main -Wl,--dynamicbase -Wl,--nxcompat -Wl,--high-entropy-va -lm -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lsetupapi -lversion -luuid -static -Dmain=SDL_main"
-	if [ "$1" ]; then
-	GCC_OPTS="$GCC_OPTS .icon.res -O3 -mwindows -DRELEASE=$1"
-	postbuild="upx --best main.exe"
-	if [ ! -f icon.ico ]; then
-	echo -e "\033[mWarning: no icon.ico found. Building without an icon...\033[m"
-	else
-	echo "id ICON icon.ico" > .rc
-	windres .rc -O coff -o .icon.res
-	rm .rc
-	fi; fi
 	winmf='-G "MinGW Makefiles"'
+	SDL_STATIC_LINK_FLAGS="-L.bin/lib -lmingw32 -lSDL2 -lSDL2main -Wl,--dynamicbase -Wl,--nxcompat -Wl,--high-entropy-va -lm -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lsetupapi -lversion -luuid -static -Dmain=SDL_main"
 else
 	lxdeps="sudo apt-get install libasound2-dev libpulse-dev cmake upx"
 	SDL_STATIC_LINK_FLAGS="-L.bin/lib -lSDL2 -lSDL2main -ldl -pthread"
-	if [ "$1" ]; then
-	GCC_OPTS="$GCC_OPTS -O3 -DRELEASE=$1"
-	postbuild="upx --best main"
-	fi
 fi
 
 # Say NO to windows build system
@@ -47,16 +32,33 @@ mv .bin2 .bin
 fi
 
 # Build
-#clear
-g++ -fno-rtti -flto -I.bin/include -Wfatal-errors -std=c++20 src/main.cpp .bin/src/gl.c -Wl,--strip-all -ffunction-sections $GCC_OPTS $SDL_STATIC_LINK_FLAGS -Wl,--gc-sections -Wl,--format=binary -Wl,$(find assets/*) -Wl,--format=default -o main
-A=$?
+clear
+A=
+for arg in "$@"; do
+A="$A -D$arg"
+declare "ARG_$arg$(expr "$arg" : ".*=.*" >/dev/null || echo "=")"
+done
+postbuild(){
+	./main $A
+}
+if [ "${ARG_RELEASE+x}" ]; then
+GCC_OPTS="$GCC_OPTS -O3"
+postbuild(){
+	upx --best main
+}
+if [ "$winmf" ]; then
+if [ ! -f icon.ico ]; then
+echo -e "\033[mWarning: no icon.ico found. Building without an icon...\033[m"
+else
+echo "id ICON icon.ico" > .rc
+windres .rc -O coff -o .icon.res
+rm .rc
+fi;
+GCC_OPTS="$GCC_OPTS .icon.res -mwindows"
+postbuild(){
+	rm .icon.res
+	upx.exe --best main.exe
+}
+fi; fi
 
-if [ -f .icon.res ]; then rm .icon.res; fi
-
-# Run executable after a successful build
-if [ $A -eq 0 ]; then
-$postbuild
-echo -e "\033[32mBuild successful. Enter argv and hit enter to run\033[m"
-read A; clear
-./main $A
-fi
+g++ -fno-rtti -flto -I.bin/include -Wfatal-errors -std=c++20 $GCC_OPTS $A src/main.cpp .bin/src/gl.c -Wl,--strip-all -ffunction-sections $SDL_STATIC_LINK_FLAGS -Wl,--gc-sections -Wl,--format=binary -Wl,$(find assets/*) -Wl,--format=default -o main && postbuild

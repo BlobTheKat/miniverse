@@ -73,7 +73,12 @@ int render(void* a){
 	win = (SDL_Window*) a;
 	SDL_GLContext gl = SDL_GL_CreateContext(win);
 	SDL_GL_MakeCurrent(win, gl);
-	gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress);
+	#ifndef USE_GLES
+	if(!gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress)) return printf("Couldn't load OpenGL\n"), abort(), 0;
+	#else
+	#error GLES is unimplemented
+	if(!gladLoadGLES2((GLADloadfunc)SDL_GL_GetProcAddress)) return printf("Couldn't load OpenGL\n"), abort(), 0;
+	#endif
 	#ifndef RELEASE
 	printf("Loaded OpenGL %s\n", glGetString(GL_VERSION));
 	#endif
