@@ -4,7 +4,7 @@
 #include <iostream>
 #include "defs.cpp"
 
-#define asset(a) ([]{extern char _binary_assets_ ## a ## _start[],_binary_assets_ ## a ## _end[];return buffer{_binary_assets_ ## a ## _start, (size_t)(_binary_assets_ ## a ## _end-_binary_assets_ ## a ## _start)};}());
+#define asset(a) ([]{extern char _binary_assets_ ## a ## _start[],_binary_assets_ ## a ## _end[];return buffer{_binary_assets_ ## a ## _start, (size_t)(_binary_assets_ ## a ## _end-_binary_assets_ ## a ## _start)};}())
 typedef struct{char* data; size_t size;} buffer;
 
 GLuint makePipeline(buffer vert, buffer frag){
@@ -56,7 +56,7 @@ GLuint makePipeline(buffer vert, buffer frag){
 	return p;
 }
 
-inline void init(SDL_Window*);
+inline void init();
 inline void frame();
 bool playing;
 double t, dt;
@@ -65,9 +65,12 @@ struct{
 	int width, height;
 } window;
 vec4 mouse;
+int keyCount;
+const Uint8* keys;
 SDL_mutex* mut;
+SDL_Window* win;
 int render(void* a){
-	SDL_Window* win = (SDL_Window*) a;
+	win = (SDL_Window*) a;
 	SDL_GLContext gl = SDL_GL_CreateContext(win);
 	SDL_GL_MakeCurrent(win, gl);
 	gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress);
@@ -75,18 +78,17 @@ int render(void* a){
 	printf("Loaded OpenGL %s\n", glGetString(GL_VERSION));
 	#endif
 	if(SDL_GL_SetSwapInterval(-1)) SDL_GL_SetSwapInterval(1);
-	init(win);
+	init();
 	uint64_t start = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 	while(1){
 		double ot=t;
 		t = double(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count()-start)*1e-9;
 		dt = t-ot;
+		keys = SDL_GetKeyboardState(&keyCount);
 		SDL_GetWindowSize(win, &window.w, &window.h);
 		SDL_GetWindowPosition(win, &window.x, &window.y);
 		SDL_GL_GetDrawableSize(win, &window.width, &window.height);
 		glViewport(0, 0, window.width, window.height);
-		glClearColor(.2, .6, 1, 1);
-		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		playing = SDL_GetRelativeMouseMode();
 		SDL_LockMutex(mut);
 		frame();
@@ -115,7 +117,7 @@ int main(int argc, char** argv){
 		SDL_WaitEvent(&e);
 		SDL_LockMutex(mut);
 		switch(e.type){
-			case SDL_QUIT: return 0;
+			case SDL_QUIT: SDL_UnlockMutex(mut); return 0;
 			case SDL_KEYDOWN:
 			if(e.key.repeat) break;
 			if(e.key.keysym.sym == SDLK_ESCAPE){

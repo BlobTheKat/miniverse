@@ -2,11 +2,9 @@
 in vec3 vpos;
 out vec4 color;
 uniform vec4 col;
-uniform float depthCoeff;
 void main(){
-	vec3 a = dFdx(vpos), b = dFdy(vpos);
-	a = abs(normalize(cross(a, b)));
-	float normalTint = 1.-.1*a.z-.2*a.x;
+	vec2 a = abs(normalize(cross(dFdx(vpos), dFdy(vpos))).xz);
+	float normalTint = 1.-.1*a.y-.2*a.x;
 	color.rgb = col.rgb*normalTint;
 	color.a = col.a;
 }

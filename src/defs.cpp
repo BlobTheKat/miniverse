@@ -1,6 +1,5 @@
 #pragma once
 #include <stdio.h>
-#define _LARGEFILE64_SOURCE
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -17,9 +16,17 @@ using namespace std;
 
 #ifdef __INTELLISENSE__
 	// vscode kinda loses it
-   #pragma diag_suppress 2363
-	#pragma diag_suppress 29
-	typedef signed long long ssize_t;
+	typedef signed long ssize_t;
+	typedef monostate u0;
+#else
+typedef char u0[0];
+#endif
+
+
+#ifdef _MSVC_VER
+#define __packed [[msvc::no_unique_address]]
+#else
+#define __packed [[no_unique_address]]
 #endif
 typedef uint8_t u8;
 typedef int8_t i8;
@@ -56,7 +63,6 @@ typedef ssize_t isize;
 typedef uintptr_t uptr;
 typedef intptr_t iptr;
 typedef char byte;
-
 template<typename F, size_t L> requires (L > 0) union vec;
 template<typename F, size_t L>
 union _vec_c_types{
@@ -66,29 +72,28 @@ union _vec_c_types{
 	using rest = vec<F,L-1>;
 };
 template<typename F> union _vec_c_types<F, 3>{
-	using y = F; using z = F; using w = F[0];
+	using y = F; using z = F; using w = u0;
 	using xy = vec<F,2>; using yz = vec<F, 2>; using zw = F;
-	using xyz = F[0]; using yzw = vec<F,2>;
+	using xyz = u0; using yzw = vec<F,2>;
 	using rest = vec<F,2>;
 	//F x; vec<F,2> xy; union{ vec<F,2> yz; vec<F,2> __rest; struct{ F y; F z; }; };
 };
 template<typename F> union _vec_c_types<F, 2>{
-	using y = F; using z = F[0]; using w = F[0];
-	using xy = F[0]; using yz = F; using zw = F[0];
-	using xyz = F[0]; using yzw = F;
+	using y = F; using z = u0; using w = u0;
+	using xy = u0; using yz = F; using zw = u0;
+	using xyz = u0; using yzw = F;
 	using rest = F;
 	//struct{ F x; union{ F y; F __rest; }; };
 };
 template<typename F> union _vec_c_types<F, 1>{
-	using y = F[0]; using z = F[0]; using w = F[0];
-	using xy = F[1]; using yz = F[0]; using zw = F[0];
-	using xyz = F; using yzw = F[0];
-	using rest = F[0];
+	using y = u0; using z = u0; using w = u0;
+	using xy = F[1]; using yz = u0; using zw = u0;
+	using xyz = F; using yzw = u0;
+	using rest = u0;
 	//F x; F __rest[];
 };
 
 template<typename F, size_t R, size_t C> struct _mat;
-
 template<typename F, size_t L> requires (L > 0)
 union vec{
 	using CT = _vec_c_types<F,L>;
@@ -97,10 +102,10 @@ union vec{
 	F data[L];
 	CT::xy xy; CT::xyz xyz;
 	struct{ F x; union{
-			CT::rest __rest; CT::yz yz; CT::yzw yzw;
-			struct{ CT::y y; union{
-				CT::z zw; struct{ CT::z z; CT::w w; };
-			}; };
+		__packed CT::rest __rest; __packed CT::yz yz; __packed CT::yzw yzw;
+		struct{ __packed CT::y y; union{
+			__packed CT::z zw; struct{ __packed CT::z z; __packed CT::w w; };
+		}; };
 	}; };
 	inline vec(F a, CT::rest b) : x(a), __rest(b){}
 	template<typename... Ts>
@@ -153,7 +158,10 @@ union vec{
 using vec2 = vec<f32,2>; using dvec2 = vec<f64,2>; using ivec2 = vec<i32,2>; using uvec2 = vec<u32,2>;
 using vec3 = vec<f32,3>; using dvec3 = vec<f64,3>; using ivec3 = vec<i32,3>; using uvec3 = vec<u32,3>;
 using vec4 = vec<f32,4>; using dvec4 = vec<f64,4>; using ivec4 = vec<i32,4>; using uvec4 = vec<u32,4>;
+#ifndef __INTELLISENSE__
 static_assert(offsetof(vec2,z) == offsetof(vec2,w));
+static_assert(sizeof(vec2) == 2*sizeof(float));
+#endif
 
 
 // Column major
@@ -300,8 +308,8 @@ struct mat<F, 4, L>: _mat<F, 4, L>{
 		else if constexpr(P == TWO_FOVS_RAD){ a = 1/tan(a*.5f); b = 1/tan(b*.5f); }
 		this->data[0] = a; this->data[L+1] = b;
 		this->data[L] = this->data[2*L] = this->data[3*L] = this->data[1] = this->data[2*L+1] = this->data[3*L+1] = 0;
-		if(L >= 3){ F a = far/(near-far); this->data[2] = this->data[6] = 0, this->data[10] = a, this->data[14] = a*near; }
-		if(L >= 4) this->data[3] = this->data[7] = this->data[15] = 0, this->data[11] = -1;
+		if(L >= 3){ F a = far/(near-far); this->data[2] = this->data[L+2] = 0, this->data[2*L+2] = -a, this->data[3*L+2] = a*near; }
+		if(L >= 4) this->data[3] = this->data[L+3] = this->data[3*L+3] = 0, this->data[2*L+3] = 1;
 		if(L > 4) memset(this->data+4, 0, (L-4)*sizeof(F)), memset(this->data+L+4, 0, (L-4)*sizeof(F)), memset(this->data+2*L+4, 0, (L-4)*sizeof(F)), memset(this->data+3*L+4, 0, (L-4)*sizeof(F));
 	}
 	
@@ -310,7 +318,7 @@ struct mat<F, 4, L>: _mat<F, 4, L>{
 		this->data[1] = this->data[L] = this->data[2*L] = this->data[2*L+1] = 0;
 		this->data[0] = 2 * w; this->data[L+1] = 2 * h;
 		this->data[3*L] = -(left + right) * w; this->data[3*L+1] = -(bottom + top) * h;
-		if(L >= 3){ this->data[2] = this->data[L+2] = 0; float d = -1 / (far - near); this->data[2*L+2] = 2 * d; this->data[3*L+2] = (far + near) * d; }
+		if(L >= 3){ this->data[2] = this->data[L+2] = 0; float d = -1 / (far - near); this->data[2*L+2] = -2 * d; this->data[3*L+2] = (far + near) * d; }
 		if(L >= 4) this->data[3] = this->data[L+3] = this->data[2*L+3] = 0, this->data[3*L+3] = 1;
 		if(L > 4) memset(this->data+4, 0, (L-4)*sizeof(F)), memset(this->data+L+4, 0, (L-4)*sizeof(F)), memset(this->data+2*L+4, 0, (L-4)*sizeof(F)), memset(this->data+3*L+4, 0, (L-4)*sizeof(F));
 	}

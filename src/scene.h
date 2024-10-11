@@ -1,8 +1,8 @@
-struct Scene{
+struct Mesh{
 	usize vertexCount, indexCount;
 	const vec3* vertices;
 	const u16* indices;
-	template<usize L1, usize L2> Scene(const vec3 (&a)[L1], const u16 (&b)[L2]){
+	template<usize L1, usize L2> Mesh(const vec3 (&a)[L1], const u16 (&b)[L2]){
 		this->vertexCount = L1; this->vertices = a;
 		this->indexCount = L2; this->indices = b;
 	}
@@ -15,6 +15,6 @@ struct Scene{
 	}
 };
 
-const vec3 vData[] = {vec3(-3,0,-3),vec3(-3,0,3),vec3(3,0,-3),vec3(3,0,3),vec3(-3,2,-3),vec3(-3,2,3),vec3(3,2,-3),vec3(3,2,3)};
-const u16 iData[] = {0, 1, 2, 3, 6, 7, 4, 5, -1, 2, 6, 0, 4, 1, 5, 3, 7};
-const Scene mainScene(vData, iData);
+const vec3 vData[] = {vec3(-1,-1,-1),vec3(-1,-1,1),vec3(1,-1,-1),vec3(1,-1,1),vec3(-1,1,-1),vec3(-1,1,1),vec3(1,1,-1),vec3(1,1,1)};
+const u16 iData[] = {0, 1, 5, 3, 7, 6, 5, 4, 0, 6, 2, 3, 0, 1};
+const Mesh cube(vData, iData);

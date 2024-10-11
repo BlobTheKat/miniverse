@@ -4,20 +4,21 @@
 GCC_OPTS="-Wno-overflow -fwrapv -Wno-narrowing"
 if [ "$OSTYPE" = "msys" ]; then
 	if ! cmake --version 2>&1 /dev/null; then scoop install cmake; fi
+	PATH=$PATH:~/scoop/apps/mingw/current/bin
 	if ! g++ -v 2>/dev/null; then scoop install mingw; fi
 	SDL_STATIC_LINK_FLAGS="-L.bin/lib -lmingw32 -lSDL2 -lSDL2main -Wl,--dynamicbase -Wl,--nxcompat -Wl,--high-entropy-va -lm -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lsetupapi -lversion -luuid -static -Dmain=SDL_main"
+	if [ "$1" ]; then
+	GCC_OPTS="$GCC_OPTS .icon.res -O3 -mwindows -DRELEASE=$1";
 	if [ ! -f icon.ico ]; then
 	echo -e "\033[mWarning: no icon.ico found. Building without an icon...\033[m"
 	else
 	echo "id ICON icon.ico" > .rc
 	windres .rc -O coff -o .icon.res
 	rm .rc
-	GCC_OPTS=".icon.res $GCC_OPTS"
-	fi
-	if [ "$1" ]; then GCC_OPTS="$GCC_OPTS -O3 -mwindows -DRELEASE=$1"; fi
+	fi; fi
 	winmf='-G "MinGW Makefiles"';
 else
-	lxdeps="sudo apt-get install libasound2-dev libpulse-dev"
+	lxdeps="sudo apt-get install libasound2-dev libpulse-dev cmake"
 	SDL_STATIC_LINK_FLAGS="-L.bin/lib -lSDL2 -lSDL2main -ldl -pthread"
 	if [ "$1" ]; then GCC_OPTS="$GCC_OPTS -O3 -DRELEASE=$1"; fi;
 fi
@@ -32,8 +33,7 @@ mv glad-everywhere/src .bin2
 rm -rf glad-everywhere
 git clone -b SDL2 https://github.com/libsdl-org/SDL
 $lxdeps
-cmake $winmf -S SDL -B SDL/build -DCMAKE_BUILD_TYPE=Release -DSDL_STATIC=ON -DSDL_DYNAMIC=OFF
-cmake --build SDL/build --config Release --parallel
+cmake $winmf -S SDL -B SDL/build -DCMAKE_BUILD_TYPE=Release -DSDL_STATIC=ON -DSDL_DYNAMIC=OFF && cmake --build SDL/build --config Release --parallel || exit
 mv SDL/include .bin2/include/SDL2
 mkdir .bin2/lib
 mv SDL/build/*.a .bin2/lib
