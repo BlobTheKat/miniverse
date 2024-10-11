@@ -109,7 +109,7 @@ int main(int argc, char** argv){
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 32);
 	int size; SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &size);
 	if(size < 24) SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-	SDL_Window* win = SDL_CreateWindow("Womp womp simulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+	SDL_Window* win = SDL_CreateWindow("Box simulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 	mut = SDL_CreateMutex();
 	SDL_CreateThread(render, NULL, win);
 	while(1){

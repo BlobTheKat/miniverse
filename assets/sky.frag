@@ -1,6 +1,7 @@
 #version 410
 in vec3 vpos;
 out vec4 color;
+uniform float t;
 
 uint uhash(uvec2 a){ 
 	uint x = ((a.x * 1597334673U) ^ (a.y * 3812015801U));
@@ -30,7 +31,7 @@ void main(){
 	vec3 a = normalize(vpos);
 	color = vec4(0, .5+a.y*.25, 1, 1);
 	if(a.y > .1){
-		vec2 uv = vpos.xz/vpos.y*10.;
+		vec2 uv = vpos.xz/vpos.y*10. + t*vec2(.15,.4);
 		vec2 off = valnoise(uv);
    	vec2 x = valnoise(vec2(uv.x+uv.y, uv.x-uv.y)/2.8+off);
 		color.rgb = lerp(color.rgb, vec3(.8+abs(x.x-.75)*.3+x.y*.2), clamp(0, x.x*min(2.,a.y*6.-.6)-.5, 1));

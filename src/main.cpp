@@ -1,13 +1,14 @@
 #include "sdl.cpp"
 #include "scene.h"
 
-GLint mUni, oUni, cUni, dcUni, mUni2;
+GLint mUni, oUni, cUni, dcUni, mUni2, tUni2;
 GLuint def, sky;
 
 inline void init(){
 	def = makePipeline(asset(basic_vert), asset(basic_frag));
 	sky = makePipeline(asset(sky_vert), asset(sky_frag));
 	mUni2 = glGetUniformLocation(sky, "m");
+	tUni2 = glGetUniformLocation(sky, "t");
 	mUni = glGetUniformLocation(def, "m");
 	oUni = glGetUniformLocation(def, "o");
 	cUni = glGetUniformLocation(def, "col");
@@ -60,6 +61,7 @@ inline void frame(){
 	m.rotateXZ(looking.x);
 	glUseProgram(sky);
 	glUniformMatrix4fv(mUni2, 1, false, m);
+	glUniform1f(tUni2, t);
 	glDepthFunc(GL_ALWAYS);
 	cube.draw();
 	glDepthFunc(GL_LESS);
