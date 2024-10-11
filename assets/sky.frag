@@ -11,7 +11,21 @@ uint uhash(uvec2 a){
 	return x;
 }
 #define lerp(a,b,c) mix(a,b,c*c*(3.f-2.f*c))
-vec2 valnoise(vec2 uv){
+float valnoise(vec2 uv){
+	vec2 fa = floor(uv);
+	uv -= fa;
+	uvec2 i = uvec2(ivec2(fa));
+	uint x = uhash(i);
+	float a = float(x)/4294967296.;
+	i.x++; x = uhash(i);
+	a = lerp(a, float(x)/4294967296., uv.x);
+	i.y++; x = uhash(i);
+	float a2 = float(x)/4294967296.;
+	i.x--; x = uhash(i);
+	a2 = lerp(float(x)/4294967296., a2, uv.x);
+	return lerp(a, a2, uv.y);
+}
+vec2 valnoise2(vec2 uv){
 	vec2 fa = floor(uv);
 	uv -= fa;
 	uvec2 i = uvec2(ivec2(fa));
@@ -31,9 +45,10 @@ void main(){
 	vec3 a = normalize(vpos);
 	color = vec4(0, .5+a.y*.25, 1, 1);
 	if(a.y > .1){
-		vec2 uv = vpos.xz/vpos.y*10. + t*vec2(.15,.4);
-		vec2 off = valnoise(uv);
-   	vec2 x = valnoise(vec2(uv.x+uv.y, uv.x-uv.y)/2.8+off);
+		vec2 uv = vpos.xz/vpos.y*10.;
+		vec2 off = valnoise2(uv);
+		uv += t*vec2(.15,.4);
+   	vec2 x = valnoise2(vec2(uv.x+uv.y, uv.x-uv.y)/2.8+off);
 		color.rgb = lerp(color.rgb, vec3(.8+abs(x.x-.75)*.3+x.y*.2), clamp(0, x.x*min(2.,a.y*6.-.6)-.5, 1));
 	}
 }
