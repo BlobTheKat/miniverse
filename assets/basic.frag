@@ -1,6 +1,6 @@
 #version 410
-in vec3 vpos;
 out vec4 color;
+in vec3 vpos;
 uniform vec4 col;
 void main(){
 	vec2 a = abs(normalize(cross(dFdx(vpos), dFdy(vpos))).xz);

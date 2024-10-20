@@ -17,14 +17,14 @@ fi
 if [ ! -d .bin ]; then
 rm -rf .bin2
 mkdir .bin2
-git clone https://github.com/BlobTheKat/glad-everywhere
+git clone https://github.com/BlobTheKat/glad-everywhere --depth=1
 mv glad-everywhere/include .bin2
 mv glad-everywhere/src .bin2
 rm -rf glad-everywhere
-git clone -b SDL2 https://github.com/libsdl-org/SDL
+git clone -b SDL2 https://github.com/libsdl-org/SDL --depth=1
 $lxdeps
 cmake $winmf -S SDL -B SDL/build -DCMAKE_BUILD_TYPE=Release -DSDL_STATIC=ON -DSDL_SHARED=OFF -DSDL_DYNAMIC_API=OFF -DSDL_RENDER_DISABLED=ON -DSDL_RENDER_D3D=OFF -DSDL_RENDER_METAL=OFF -DSDL_VULKAN=OFF -DSDL_TEST=OFF && cmake --build SDL/build --config Release --parallel || exit
-mv SDL/build/include/* .bin2/include
+mv SDL/include .bin2/include/SDL2
 mkdir .bin2/lib
 mv SDL/build/*.a .bin2/lib
 rm -rf SDL
@@ -61,4 +61,4 @@ postbuild(){
 }
 fi; fi
 
-g++ -fno-rtti -flto -I.bin/include -Wfatal-errors -std=c++20 $GCC_OPTS $A src/main.cpp .bin/src/gl.c -Wl,--strip-all -ffunction-sections $SDL_STATIC_LINK_FLAGS -Wl,--gc-sections -Wl,--format=binary -Wl,$(find assets/*) -Wl,--format=default -o main && postbuild
+clang++ -fno-rtti -flto -I.bin/include -Wfatal-errors -std=c++20 $GCC_OPTS $A src/main.cpp .bin/src/gl.c -Wl,--strip-all -ffunction-sections $SDL_STATIC_LINK_FLAGS -Wl,--gc-sections -Wl,--format=binary -Wl,$(find assets/*) -Wl,--format=default -o main && postbuild

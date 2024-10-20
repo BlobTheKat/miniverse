@@ -15,6 +15,6 @@ struct Mesh{
 	}
 };
 
-const vec3 vData[] = {vec3(-1,-1,-1),vec3(-1,-1,1),vec3(1,-1,-1),vec3(1,-1,1),vec3(-1,1,-1),vec3(-1,1,1),vec3(1,1,-1),vec3(1,1,1)};
+const vec3 vData[] = {vec3(-1,-1,-1),vec3(-1,-1,1),vec3(-1,1,-1),vec3(-1,1,1),vec3(1,-1,-1),vec3(1,-1,1),vec3(1,1,-1),vec3(1,1,1)};
 const u16 iData[] = {0, 1, 5, 3, 7, 6, 5, 4, 0, 6, 2, 3, 0, 1};
 const Mesh cube(vData, iData);
