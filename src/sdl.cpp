@@ -4,7 +4,11 @@
 #include <iostream>
 #include "defs.cpp"
 
-#define asset(a) ([]{extern char _binary_assets_ ## a ## _start[],_binary_assets_ ## a ## _end[];return buffer{_binary_assets_ ## a ## _start, (size_t)(_binary_assets_ ## a ## _end-_binary_assets_ ## a ## _start)};}())
+#ifndef __INTELLISENSE__
+#define asset(a) ([]{extern char _binary_assets_ ## a ## _start __asm__("_binary_assets_" #a "_start"), _binary_assets_ ## a ## _end __asm__("_binary_assets_" #a "_end");return buffer{&_binary_assets_ ## a ## _start, (size_t)(&_binary_assets_ ## a ## _end-&_binary_assets_ ## a ## _start)};}())
+#else
+#define asset(a) buffer{0,0}
+#endif
 typedef struct{char* data; size_t size;} buffer;
 
 GLuint makePipeline(buffer vert, buffer frag){
@@ -28,24 +32,24 @@ GLuint makePipeline(buffer vert, buffer frag){
 		int size1; char* error;
 		glGetShaderiv(v, GL_INFO_LOG_LENGTH, &size1);
 		if(size1 > 0){
-			error = (char*) malloc(size1+35);
+			error = (char*) malloc(size1+34);
 			SDL_memcpy(error, "GLSL vertex shader error:\n\x1b[31m", 31);
 			glGetShaderInfoLog(v, size1, NULL, error+31);
-			*(int*)(error+size1+30) = *(int*)"\x1b[m";
+			SDL_memcpy(error+size1+30, "\x1b[m", 4);
 			goto end;
 		}
 		glGetShaderiv(f, GL_INFO_LOG_LENGTH, &size1);
 		if(size1 > 0){
-			error = (char*) malloc(size1+37);
+			error = (char*) malloc(size1+36);
 			SDL_memcpy(error, "GLSL fragment shader error:\n\x1b[31m", 33);
 			glGetShaderInfoLog(f, size1, NULL, error+33);
-			*(int*)(error+size1+30) = *(int*)"\x1b[m";
+			SDL_memcpy(error+size1+32, "\x1b[m", 4);
 			goto end;
 		}
-		error = (char*) malloc(size+34);
+		error = (char*) malloc(size+33);
 		SDL_memcpy(error, "GLSL program link error:\n\x1b[31m", 30);
-		glGetProgramInfoLog(v, size, NULL, error+30);
-		*(int*)(error+size1+30) = *(int*)"\x1b[m";
+		glGetProgramInfoLog(p, size, NULL, error+30);
+		SDL_memcpy(error+size+29, "\x1b[m", 4);
 		end:
 		puts(error);
 		free(error);

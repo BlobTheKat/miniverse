@@ -1,5 +1,6 @@
 #include "sdl.cpp"
 #include "scene.h"
+#include "runtime.cpp"
 
 GLint mUni, volUni, camUni, dcUni, mUni2, tUni2;
 GLuint cb, sky;
@@ -42,8 +43,9 @@ inline void init(){
 		data[z<<16|y<<8|x] = h < 128 ? bvec4{230,26,77,255} : bvec4{0};
 	}
 	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, 256, 256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	free(data);
+	SDL_free(data);
 	glGenerateMipmap(GL_TEXTURE_3D);
+	test();
 }
 
 vec2 looking; f32 dist = 4;

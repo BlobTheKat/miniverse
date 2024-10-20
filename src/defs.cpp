@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <math.h>
@@ -14,14 +13,19 @@
 #include <cstring>
 using namespace std;
 
+// Windows
+#ifdef _WIN32
+	#include <BaseTsd.h>
+	typedef SSIZE_T ssize_t;
+	typedef SIZE_T size_t;
+#else
+	#include <sys/types.h>
+#endif
 #ifdef __INTELLISENSE__
-	// vscode kinda loses it
-	typedef signed long ssize_t;
-	typedef monostate u0;
+typedef monostate u0;
 #else
 typedef char u0[0];
 #endif
-
 
 #ifdef _MSVC_VER
 #define __packed [[msvc::no_unique_address]]
@@ -63,89 +67,91 @@ typedef ssize_t isize;
 typedef uintptr_t uptr;
 typedef intptr_t iptr;
 typedef char byte;
-template<typename F, size_t L> requires (L > 0) union vec;
+template<typename F, size_t L> requires (L > 0) struct vec;
 template<typename F, size_t L>
-union _vec_c_types{
-	using y = F; using z = F; using w = F;
-	using xy = vec<F,2>; using yz = vec<F, 2>; using zw = vec<F,2>;
-	using xyz = vec<F,3>; using yzw = vec<F,3>; using xyzw = vec<F,4>;
-	using rest = vec<F,L-1>;
+struct _vec_c_types{
+	union{
+		F data[L];
+		vec<F, 2> xy;
+		vec<F, 3> xyz;
+		vec<F, 4> xyzw;
+		struct{ F x; union{
+			vec<F,2> yz; vec<F,3> yzw; vec<F,L-1> __rest;
+			struct{ F y; union{
+				vec<F,2> zw; struct{ F z; F w; };
+			}; };
+		}; };
+	};
+	template<typename... Ts>
+	inline _vec_c_types(F x, Ts... a) : x(x), __rest(a...){}
 };
-template<typename F> union _vec_c_types<F, 4>{
-	using y = F; using z = F; using w = F;
-	using xy = vec<F,2>; using yz = vec<F, 2>; using zw = vec<F, 2>;
-	using xyz = vec<F,3>; using yzw = vec<F,3>; using xyzw = u0;
-	using rest = vec<F,3>;
+template<typename F> struct _vec_c_types<F, 4>{
+	union{
+		F data[4];
+		vec<F, 2> xy;
+		vec<F, 3> xyz;
+		struct{ F x; union{
+			vec<F,2> yz; vec<F,3> yzw, __rest;
+			struct{ F y; union{
+				vec<F,2> zw; struct{ F z; F w; };
+			}; };
+		}; };
+	};
+	template<typename... Ts>
+	inline _vec_c_types(F x, Ts... a) : x(x), yzw(a...){}
 };
-template<typename F> union _vec_c_types<F, 3>{
-	using y = F; using z = F; using w = u0;
-	using xy = vec<F,2>; using yz = vec<F, 2>; using zw = F;
-	using xyz = u0; using yzw = vec<F,2>; using xyzw = u0;
-	using rest = vec<F,2>;
-	//F x; vec<F,2> xy; union{ vec<F,2> yz; vec<F,2> __rest; struct{ F y; F z; }; };
+template<typename F> struct _vec_c_types<F, 3>{
+	union{
+		F data[3];
+		vec<F, 2> xy;
+		struct{ F x; union{
+			vec<F,2> yz, __rest;
+			struct{ F y; F z; };
+		}; };
+	};
+	template<typename... Ts>
+	inline _vec_c_types(F x, Ts... a) : x(x), yz(a...){}
 };
-template<typename F> union _vec_c_types<F, 2>{
-	using y = F; using z = u0; using w = u0;
-	using xy = u0; using yz = F; using zw = u0;
-	using xyz = u0; using yzw = F; using xyzw = u0;
-	using rest = F;
-	//struct{ F x; union{ F y; F __rest; }; };
-};
-template<typename F> union _vec_c_types<F, 1>{
-	using y = u0; using z = u0; using w = u0;
-	using xy = F; using yz = u0; using zw = u0;
-	using xyz = F; using yzw = u0; using xyzw = F;
-	using rest = u0;
-	//F x; F __rest[];
+template<typename F> struct _vec_c_types<F, 2>{
+	union{
+		F data[2];
+		struct{ F x; union{ F y; F __rest; }; };
+	};
+	template<typename... Ts>
+	inline _vec_c_types(F x, Ts... a) : x(x), y(a...){}
 };
 
 template<typename F, typename... X>
-F hypot(X... x){
-	return sqrt((0 + ... + (x * x)));
-}
+F hypot(X... x){ return sqrt((0 + ... + (x * x))); }
 
 template<typename F, size_t R, size_t C> struct _mat;
+#define ci constexpr inline
 template<typename F, size_t L> requires (L > 0)
-union vec{
-	using CT = _vec_c_types<F,L>;
+struct vec: _vec_c_types<F,L>{
 	static const size_t size = L;
-	using Type = F;
-	F data[L];
-	CT::xy xy; CT::xyz xyz; CT::xyzw xyzw;
-	struct{ F x; union{
-		__packed CT::rest __rest; __packed CT::yz yz; __packed CT::yzw yzw;
-		struct{ __packed CT::y y; union{
-			__packed CT::z zw; struct{ __packed CT::z z; __packed CT::w w; };
-		}; };
-	}; };
-	inline vec(F a, CT::rest b) : x(a), __rest(b){}
+	using type = F;
 	template<typename... Ts>
-	inline vec(F a, Ts... b) : x(a), __rest(b...){}
-	template<typename X, typename... Ts> requires is_same<typename X::Type, F>::value
-	inline vec(X& a, Ts... b) : x(a.x), __rest(a.__rest, b...){}
-	inline vec(F a) : x(a), __rest(a){}
-	inline vec() : x(0), __rest(0){}
-	inline F& operator[](size_t i){return this.data[i];}
-	#define OP(o, o2, d) constexpr inline vec<F,L> operator o o2(d) const{return {o x o2, o __rest o2};}
+	inline vec(F a, Ts... b) : _vec_c_types<F,L>(a, b...){}
+	template<typename X, typename... Ts> requires (X::size > 1) && (X::type)
+	inline vec(X& a, Ts... b) : _vec_c_types<F,L>(a.x, a.__rest, b...){}
+	inline vec(F a) : _vec_c_types<F,L>(a, a){}
+	inline vec() : _vec_c_types<F,L>(0){}
+	inline F& operator[](size_t i){return this->data[i];}
+	#define OP(o, o2, d) ci vec<F,L> operator o o2(d) const{return {o this->x o2, o this->__rest o2};}
 	OP(+,,) OP(-,,) OP(++,,) OP(--,,) OP(,++,int) OP(,--,int)
 	#undef OP
-	constexpr static inline F __sum(const CT::rest& x){return x.sum();}
-	constexpr static inline F __sum(F x){return x;}
-	constexpr inline F sum() const{return x + __sum(__rest);};
-	constexpr static inline F __sqsum(const CT::rest& x){return x.sqsum();}
-	constexpr static inline F __sqsum(F x){return x*x;}
-	constexpr inline F sqsum() const{return x*x + __sqsum(__rest);};
-	constexpr inline F length() const{return sqrt(sqsum());};
+	ci F sum() const{return this->x + this->__rest.sum();};
+	ci F sqsum() const{return this->x*this->x + this->__rest.sqsum();};
+	ci F length() const{return sqrt(sqsum());};
 	
-	constexpr inline bool operator!() const{return !x && !__rest;}
-	constexpr inline operator bool() const{return (bool)x && (bool)__rest;}
-	constexpr inline operator F() requires (L == 1){ return x; }
-	inline operator F*(){ return data; }
+	ci bool operator!() const{return !this->x && !this->__rest;}
+	ci operator bool() const{return (bool)this->x || (bool)this->__rest;}
+	inline operator F*(){ return this->data; }
 	#define OP(o,o2) \
-		constexpr inline vec<F,L> operator o(vec<F,L> b) const{return {x o b->x, __rest o b->__rest};} \
-		constexpr inline vec<F,L>& operator o2(vec<F,L> b){x o2 b->x, __rest o2 b->__rest;return *this;} \
-		constexpr inline vec<F,L> operator o(F b) const{return {x o b, __rest o b};} \
-		constexpr inline vec<F,L>& operator o2(F b){x o2 b, __rest o2 b;return *this;}
+		ci vec<F,L> operator o(vec<F,L> b) const{return {this->x o b->x, this->__rest o b->__rest};} \
+		ci vec<F,L>& operator o2(vec<F,L> b){this->x o2 b->x, this->__rest o2 b->__rest;return *this;} \
+		ci vec<F,L> operator o(F b) const{return {this->x o b, this->__rest o b};} \
+		ci vec<F,L>& operator o2(F b){this->x o2 b, this->__rest o2 b;return *this;}
 	OP(+, +=) OP(-, -=) OP(*, *=) OP(/, /=) OP(%, %=) OP(&, &=) OP(|, |=) OP(^, ^=) OP(<<, <<=) OP(>>, >>=)
 	#undef OP
 	template<size_t O> vec<F,O> operator*(_mat<F,O,L>& m){
@@ -153,7 +159,7 @@ union vec{
 		F* b = a, *i = m.data, *end = i + O*L;
 		for(; i < end; i += L){
 			F acc = 0;
-			for(size_t j = 0; j < L; j++) acc += data[j] * i[j];
+			for(size_t j = 0; j < L; j++) acc += this->data[j] * i[j];
 			*b++ = acc;
 		}
 		return a;
@@ -169,15 +175,52 @@ union vec{
 		return *this;
 	}
 };
+template<typename F>
+struct vec<F,1>{
+	static const size_t size = 1;
+	using type = F;
+	union{ F data[1]; F x; };
+	inline vec(F a = 0) : x(a){}
+	template<typename... Ts>
+	inline vec(F a, Ts...) : x(a){}
+	template<typename X, typename... Ts> requires (X::size) && (X::type)
+	inline vec(X& a, Ts...) : x(a.x){}
+	inline vec() : x(0){}
+	inline F& operator[](size_t i){return this->x;}
+	#define OP(o, o2, d) ci vec<F,1> operator o o2(d) const{return {o x o2};}
+	OP(+,,) OP(-,,) OP(++,,) OP(--,,) OP(,++,int) OP(,--,int)
+	#undef OP
+	ci F sum() const{return x;};
+	ci F sqsum() const{return x*x;};
+	ci F length() const{return sqrt(x*x);};
+	ci bool operator!() const{return !x;}
+	ci operator bool() const{return (bool)x;}
+	ci operator F(){ return x; }
+	ci operator F*(){ return data; }
+	#define OP(o,o2) \
+		ci vec<F,1> operator o(vec<F,1> b) const{return {x o b->x};} \
+		ci vec<F,1>& operator o2(vec<F,1> b){x o2 b->x;return *this;} \
+		ci vec<F,1> operator o(F b) const{return {x o b};} \
+		ci vec<F,1>& operator o2(F b){x o2 b;return *this;}
+	OP(+, +=) OP(-, -=) OP(*, *=) OP(/, /=) OP(%, %=) OP(&, &=) OP(|, |=) OP(^, ^=) OP(<<, <<=) OP(>>, >>=)
+	#undef OP
+	template<size_t O> vec<F,O> operator*(_mat<F,O,1>& m){
+		vec<F,O> a;
+		F* b = a, *i = m.data, *end = i + O;
+		for(; i < end; i++) *b++ = x * i[0];
+		return a;
+	}
+	vec<F,1>& operator*=(_mat<F,1,1>& m){
+		x *= m.data[0];
+		return *this;
+	}
+};
 
 
 using vec2 = vec<f32,2>; using dvec2 = vec<f64,2>; using ivec2 = vec<i32,2>; using uvec2 = vec<u32,2>; using bvec2 = vec<u8,2>;
 using vec3 = vec<f32,3>; using dvec3 = vec<f64,3>; using ivec3 = vec<i32,3>; using uvec3 = vec<u32,3>; using bvec3 = vec<u8,3>;
 using vec4 = vec<f32,4>; using dvec4 = vec<f64,4>; using ivec4 = vec<i32,4>; using uvec4 = vec<u32,4>; using bvec4 = vec<u8,4>;
-#ifndef __INTELLISENSE__
-static_assert(offsetof(vec2,z) == offsetof(vec2,w));
 static_assert(sizeof(vec2) == 2*sizeof(float));
-#endif
 
 
 // Column major
