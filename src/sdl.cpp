@@ -2,7 +2,7 @@
 #include <glad/gl.h>
 #include <chrono>
 #include <iostream>
-#include "defs.cpp"
+#include "util/defs.cpp"
 
 #ifndef __INTELLISENSE__
 #define asset(a) ([]{extern char _binary_assets_ ## a ## _start __asm__("_binary_assets_" #a "_start"), _binary_assets_ ## a ## _end __asm__("_binary_assets_" #a "_end");return buffer{&_binary_assets_ ## a ## _start, (size_t)(&_binary_assets_ ## a ## _end-&_binary_assets_ ## a ## _start)};}())

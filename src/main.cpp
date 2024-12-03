@@ -1,20 +1,19 @@
 #include "sdl.cpp"
 #include "scene.h"
-#include "runtime.cpp"
+#include "sim/sim.cpp"
 
-GLint mUni, volUni, camUni, dcUni, mUni2, tUni2;
+GLint mUni, colUni, camUni, dcUni, mUni2, tUni2;
 GLuint cb, sky;
 
 GLuint cbtex;
 
 inline void init(){
-	cb = makePipeline(asset(cube_vert), asset(cube_frag));
+	cb = makePipeline(asset(basic_vert), asset(basic_frag));
 	sky = makePipeline(asset(sky_vert), asset(sky_frag));
 	mUni2 = glGetUniformLocation(sky, "m");
 	tUni2 = glGetUniformLocation(sky, "t");
 	mUni = glGetUniformLocation(cb, "m");
-	volUni = glGetUniformLocation(cb, "vol");
-	camUni = glGetUniformLocation(cb, "cam");
+	colUni = glGetUniformLocation(cb, "col");
 	GLuint buf[2];
 	glGenBuffers(2, buf);
 	glBindBuffer(GL_ARRAY_BUFFER, buf[0]);
@@ -45,12 +44,12 @@ inline void init(){
 	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, 256, 256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	SDL_free(data);
 	glGenerateMipmap(GL_TEXTURE_3D);
-	test();
+	physics::test();
 }
 
 vec2 looking; f32 dist = 4;
 f32 fov = 90;
-vec3 pos{0, .75, -120};
+vec3 pos{0, .75, -3};
 inline void frame(){
 	//glClearColor(.2, .6, 1, 1);
 	//glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -92,12 +91,11 @@ inline void frame(){
 	glEnable(GL_CULL_FACE);
 	m.translate(-pos);
 	o.identity();
-	o.scale(100);
 	m *= o;
 	glUseProgram(cb);
 	glUniformMatrix4fv(mUni, 1, false, m);
 	glUniform3fv(camUni, 1, o.invert(pos));
-	glUniform1i(volUni, 0);
+	glUniform4f(colUni, .9, .1, .3, 1);
 	cube.draw();
 }
 

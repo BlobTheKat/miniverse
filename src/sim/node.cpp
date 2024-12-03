@@ -1,0 +1,39 @@
+#include "rules.cpp"
+
+namespace physics{
+
+struct bf16{
+	u16 v;
+	bf16() : v(0){}
+	operator f32(){return bit_cast<f32>(v<<16);}
+	bf16(f32 a) : v(bit_cast<u32>(a)>>16){}
+};
+using hvec2 = vec<bf16, 2>;
+inline f32 fast_inverse(f32 x){
+	// Best polynomial for log-accuracy: 0x7ef08eb3
+	// Best polynomial for linear-accuracy: 0x7ef08dcb
+	f32 f = bit_cast<f32>(0x7ef08eb3 - (bit_cast<u32>(x)));
+	return f*(2-x*f);
+}
+// x*Q_sqrt(x)
+inline f32 fast_sqrt(f32 x){
+	f32 f = bit_cast<f32>(0x5f3759df - (bit_cast<u32>(x)>>1));
+	return x*f*(1.5-x*f*f);
+}
+
+struct Node{
+	static const u8 PINNED = 1, SELECTED = 2;
+	Node* next;
+	f64 x, y;
+	f32 dx, dy;
+	f32 radius;
+	u8 flags; u8 bookmark_id;
+	bf16 tidal_force;
+	union{
+		f32 mass;
+		f32 props[];
+	};
+	Node(f64 x, f64 y, f32 rad, f32 mass) : x(x), y(y), radius(rad), mass(mass){}
+};
+
+}

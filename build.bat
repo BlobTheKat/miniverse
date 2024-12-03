@@ -43,26 +43,6 @@ if not exist ".bin\" (
 	rmdir /s /q SDL
 	echo id ICON icon.ico> .bin2\icon.rc
 
-	: v8
-	md v8
-	cd v8
-	call git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git --depth=1
-	set "path=%path%;%CD%/depot_tools"
-	echo call git.exe "%%*"> git.bat
-	set DEPOT_TOOLS_METRICS=0
-	set DEPOT_TOOLS_REPORT_BUILD=0
-	set DEPOT_TOOLS_UPDATE=0
-	set DEPOT_TOOLS_WIN_TOOLCHAIN=0
-	call fetch v8
-	cd v8
-	call git checkout tags/13.0.245.16
-	call gclient sync
-	call gn gen out --args="is_clang=true v8_enable_i18n_support=false v8_static_library=true is_debug=false symbol_level=0 use_custom_libcxx=false v8_monolithic=true is_component_build=false v8_use_external_startup_data=false v8_enable_fuzztest=false v8_enable_gdbjit=false v8_use_external_startup_data=false v8_enable_sandbox=true v8_enable_pointer_compression=true treat_warnings_as_errors=false"
-	call ninja -C out v8_monolith
-	move include ..\..\.bin2\include\v8 >nul
-	move  out\obj\v8_monolith.a ..\..\.bin2\lib >nul
-	cd ..\..
-	rmdir /s /q v8
 	move .bin2 .bin >nul
 )
 
@@ -81,13 +61,14 @@ for /f %%A in ("%*") do (
 	set defs=!defs! /D%%A
 	echo "%%A" | findstr "=" >nul && set ARG_%%A; || set ARG_%%A=;
 )
-set LOPTS= /subsystem:console
+set LOPTS= /subsystem:console /DEBUG /DEBUG:FULL
+set OPTS= -gcolumn-info /Od /Ob0 /EHsc /GR -gcodeview /Z7 /MDd
 if "%ARG_RELEASE%" neq "" (
 	set OPTS= /O2 /GR- /Gy
 	set LOPTS= /release /opt:ref /subsystem:windows /dynamicbase /nxcompat /highentropyva
 )
 
-call clang-cl -Wno-unused-command-line-argument -fuse-ld=lld -Wno-deprecated -Wno-overflow -Wno-narrowing -flto /I".bin/include" /I".bin/include/v8" -Wfatal-errors /Dmain=SDL_main!defs!!OPTS! /std:c++20 src\main.cpp .bin\src\gl.c!assets! /link!LOPTS! /LIBPATH:".bin/lib" v8_monolith.lib dbghelp.lib SDL2-static.lib SDL2main.lib advapi32.lib user32.lib gdi32.lib winmm.lib imm32.lib ole32.lib oleaut32.lib shell32.lib setupapi.lib version.lib .bin\icon.res /OUT:main.exe
+call clang-cl -Wno-unused-command-line-argument -fuse-ld=lld -Wno-deprecated -Wno-overflow -Wno-narrowing -flto /I".bin/include" -Wfatal-errors /Dmain=SDL_main!defs!!OPTS! /std:c++20 src\main.cpp .bin\src\gl.c!assets! /link!LOPTS! /LIBPATH:".bin/lib" SDL2-static.lib SDL2main.lib advapi32.lib user32.lib gdi32.lib winmm.lib imm32.lib ole32.lib oleaut32.lib shell32.lib setupapi.lib version.lib .bin\icon.res /OUT:main.exe
 set /A ERR=%errorlevel%
 del /q .bin\icon.res
 del /q main.lib
@@ -95,9 +76,8 @@ rmdir /s /q .bin\assets
 if %ERR% neq 0 exit
 
 if "%ARG_RELEASE%" neq "" (
-	: v8 doesn't play well with upx
-	: call :check upx upx
-	: upx --best main.exe
+	call :check upx upx
+	upx --best main.exe
 	cls
 ) else (
 	cls
