@@ -28,12 +28,15 @@ struct Node{
 	f32 dx, dy;
 	f32 radius;
 	u8 flags; u8 bookmark_id;
-	bf16 tidal_force;
+	inline f32 rad_cap(f32 sq_dst){return max(sq_dst,radius*radius);}
 	union{
 		f32 mass;
-		f32 props[];
+		struct{ f32 props[]; };
 	};
-	Node(f64 x, f64 y, f32 rad, f32 mass) : x(x), y(y), radius(rad), mass(mass){}
+	Node* copy();
+	static Node* create();
+	Node(){}
+	Node(f64 x, f64 y, f32 rad, f32 mass) : x(x), y(y), radius(rad), mass(mass), dx(0), dy(0){}
 };
 
 }

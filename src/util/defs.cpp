@@ -15,10 +15,11 @@
 #include <atomic>
 #include <thread>
 #include <syncstream>
+#include <numeric>
 
 // Windows
 #ifdef _WIN32
-namespace win32{
+//namespace win32{
 	#define WIN32_LEAN_AND_MEAN
 	#define NOMINMAX
 	#include <windows.h>
@@ -29,11 +30,11 @@ namespace win32{
 	#undef far
 	#undef pascal
 	#undef cdecl
-}
-	typedef win32::SSIZE_T ssize_t;
-	typedef win32::SIZE_T size_t;
-	void* page_alloc(size_t c = 1){void* a=win32::VirtualAlloc(0, c<<16, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);if(!a)abort();return a;}
-	void page_free(void* ptr, size_t c = 1){win32::VirtualFree(0, c<<16, MEM_RELEASE|MEM_DECOMMIT);}
+//}
+	typedef SSIZE_T ssize_t;
+	typedef SIZE_T size_t;
+	void* page_alloc(size_t c = 1){void* a=VirtualAlloc(0, c<<16, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);if(!a)abort();return a;}
+	void page_free(void* ptr, size_t c = 1){VirtualFree(0, c<<16, MEM_RELEASE|MEM_DECOMMIT);}
 #else
 	#include <sys/types.h>
 	#include <sys/mman.h>
@@ -156,7 +157,8 @@ template<typename F> struct _vec_c_types<F, 2>{
 
 double operator""_deg(long double d){return d*0.017453292519943295;}
 
-#define PI 3.14159265358979324
+#define PI 3.141592653589793
+#define PI2 6.283185307179586
 template<typename F, typename... X>
 F hypot(X... x){ return sqrt((0 + ... + (x * x))); }
 
@@ -181,12 +183,16 @@ struct vec: _vec_c_types<F,L>{
 	ci F length() const{return sqrt(sqsum());};
 	
 	ci bool operator!() const{return !this->x && !this->__rest;}
-	ci operator bool() const{return (bool)this->x || (bool)this->__rest;}
-	inline operator F*(){ return this->data; }
+	explicit ci operator bool() const{return (bool)this->x || (bool)this->__rest;}
+
+	template<typename F2>
+	ci operator vec<F2,L>(){return {(F2)this->x,this->__rest};}
+
+	//inline operator F*(){ return this->data; }
 	#define OP(o,o2) \
-		ci vec<F,L> operator o(vec<F,L> b) const{return {this->x o b->x, this->__rest o b->__rest};} \
-		ci vec<F,L>& operator o2(vec<F,L> b){this->x o2 b->x, this->__rest o2 b->__rest;return *this;} \
+		ci vec<F,L> operator o(vec<F,L> b) const{return {this->x o b.x, this->__rest o b.__rest};} \
 		ci vec<F,L> operator o(F b) const{return {this->x o b, this->__rest o b};} \
+		ci vec<F,L>& operator o2(vec<F,L> b){this->x o2 b.x, this->__rest o2 b.__rest;return *this;} \
 		ci vec<F,L>& operator o2(F b){this->x o2 b, this->__rest o2 b;return *this;}
 	OP(+, +=) OP(-, -=) OP(*, *=) OP(/, /=) OP(%, %=) OP(&, &=) OP(|, |=) OP(^, ^=) OP(<<, <<=) OP(>>, >>=)
 	#undef OP
@@ -696,7 +702,7 @@ struct a_lock: atomic_flag{
 	a_lock() : atomic_flag ATOMIC_FLAG_INIT{}
 	inline a_lock(bool set) : atomic_flag ATOMIC_FLAG_INIT{if(set) test_and_set(relaxed);}
 	inline void lock(){ while(test_and_set(acq_rel)) atomic_flag::wait(true); }
-	inline void force_lock(){ test_and_set(acq_rel); }
+	inline void set(){ test_and_set(acq_rel); }
 	inline bool is_locked(){ return test(acquire); }
 	inline void wait(){ if(test(acquire)) atomic_flag::wait(true); }
 	inline bool try_lock(){ return !test_and_set(acq_rel); }
@@ -706,10 +712,40 @@ struct a_lock: atomic_flag{
 
 struct s_lock: atomic_flag{
 	inline void lock(){ while(test_and_set(acq_rel)); }
-	inline void force_lock(){ test_and_set(acq_rel); }
+	inline void set(){ test_and_set(acq_rel); }
 	inline bool is_locked(){ return test(acquire); }
 	inline void wait(){ while(test(acquire)); }
 	inline bool try_lock(){ return !test_and_set(acq_rel); }
 	inline void unlock(){ clear(release); }
 	inline void unlock_all(){ clear(release); }
 };
+
+template<typename T> struct alignas(T) dummy{
+	char value[sizeof(T)];
+	inline dummy(){}
+	inline dummy(T& other){ new (value) T(other); }
+	inline dummy(T&& other){ new (value) T(other); }
+	inline dummy(dummy<T>& other){ memcpy(value, other.value, sizeof(T)); }
+	inline dummy(dummy<T>&& other){ memcpy(value, other.value, sizeof(T)); }
+	inline dummy<T>& operator=(dummy<T>& other){ memcpy(value, other.value, sizeof(T)); return *this; }
+	inline dummy<T>& operator=(dummy<T>&& other){ memcpy(value, other.value, sizeof(T)); return *this; }
+	
+	inline T& operator*(){ return *(T*)value; }
+	inline T* operator->(){ return (T*)value; }
+	inline operator T&(){return *(T*)value;}
+	inline operator T*(){return (T*)value;}
+
+	template<typename... X>
+	inline void construct(X... a){ new (value) T(a...); }
+	template<typename... X>
+	inline void replace(X... a){ ((T*)value)->~T(); new (value) T(a...); }
+	inline void destruct(){ ((T*)value)->~T(); }
+	inline T copy(){return *(T*)value;}
+	inline T&& move(){return move(*(T*)value);}
+};
+
+template<typename T>
+inline void check_addr(T* a){
+	uptr b = uptr(a);
+	if(b < 65536 || b > 0xffffffffffff || (b%alignof(T)) != 0) abort();
+}

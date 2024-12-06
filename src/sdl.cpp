@@ -62,7 +62,7 @@ GLuint makePipeline(buffer vert, buffer frag){
 
 inline void init();
 inline void frame();
-bool playing;
+bool pointerLocked;
 double t, dt;
 struct{
 	int x, y, w, h;
@@ -98,7 +98,7 @@ int render(void* a){
 		SDL_GetWindowPosition(win, &window.x, &window.y);
 		SDL_GL_GetDrawableSize(win, &window.width, &window.height);
 		glViewport(0, 0, window.width, window.height);
-		playing = SDL_GetRelativeMouseMode();
+		pointerLocked = SDL_GetRelativeMouseMode();
 		SDL_LockMutex(mut);
 		frame();
 		mouse = 0;
@@ -118,7 +118,7 @@ int main(int argc, char** argv){
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 32);
 	int size; SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &size);
 	if(size < 24) SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-	SDL_Window* win = SDL_CreateWindow("Box simulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+	SDL_Window* win = SDL_CreateWindow("Miniverse", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 	mut = SDL_CreateMutex();
 	SDL_CreateThread(render, NULL, win);
 	while(1){
@@ -147,7 +147,7 @@ int main(int argc, char** argv){
 			break;
 			case SDL_MOUSEBUTTONDOWN:
 			SDL_SetRelativeMouseMode(SDL_TRUE);
-			playing = true;
+			pointerLocked = true;
 			break;
 		}
 		SDL_UnlockMutex(mut);

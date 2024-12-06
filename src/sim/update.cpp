@@ -4,21 +4,21 @@ namespace physics{
 
 thread_local char *st_base = 0, *_st_base = 0;
 thread_local usize left = 0, right = 0, _left = 0, _right = 0;
-inline usize st_alloc(usize n){
+inline void* st_alloc(usize n){
 	n = adv_aligned<alignof(f32), alignof(void*)>(n);
 	if(right < n){
 		right = left + ((right + n) << 1);
 		st_base = (char*) realloc(st_base, left + right);
 	}
 	right -= n;
-	usize b = left; left += n;
+	void* b = st_base+left; left += n;
 	return b;
 }
 inline void _trim_alloc(){
-	if(right > sizeof(usize)<<8)
+	if(right > sizeof(void*)<<8)
 		st_base = (char*) realloc(st_base, right>>=1);
-	else if(right < sizeof(usize)<<6){
-		free(st_base); st_base = (char*) realloc(st_base, right = sizeof(usize)<<6);
+	else if(right < sizeof(void*)<<6){
+		free(st_base); st_base = (char*) malloc(right = sizeof(void*)<<6);
 	}
 }
 inline void switch_allocs(){
@@ -27,6 +27,11 @@ inline void switch_allocs(){
 }
 
 inline void st_pop(usize n){ right += n; left -= n; }
+
+struct QNodeAggregate{
+	f32 dx = 0, dy = 0;
+	f32 tidal = 0;
+};
 
 
 // For an object (Δx, Δy) from the attractor, the applied force is
@@ -45,54 +50,110 @@ inline void st_pop(usize n){ right += n; left -= n; }
 // Congratulations, you now understand the ILA optimization (Inverse-linear attraction)
 // tidal_force = 1 / (dx*dx+dy*dy)
 // velocity += (dx,dy) * tidal_force
+// In this specific case we also support lateral and inversed attraction,
+// for which we just multiply by a complex number a+bi, which is the same as the matrix
+//   v  v
+// [ a -b ] >
+// [ b  a ] >
+// This number can be thought of as the vector (a,b) of acceleration per second
+// at distance (-1, 0) from the attractor (and activators of 1)
 
-inline void update(Node* self, Node* other){
-	f32 xd = other->x - self->x, yd = other->y - self->y, rad = other->radius;
-	f32 inv_sq_dist = fast_inverse(max(rad*rad, xd*xd+yd*yd));
+template<typename T>
+inline void update(QNodeAggregate& agg, Node* self, T* other){
+	f32 xd = other->x - self->x, yd = other->y - self->y;
+	f32 inv_sq_dist = fast_inverse(other->rad_cap(xd*xd+yd*yd));
 	_AttractionRule* r = cur_a_rules;
-	f32* props = other->props;
 	while(++r < cur_a_rules_end){
-		f32 p = *props * inv_sq_dist * dt;
-		self->tidal_force = f32(self->tidal_force) + p;
-		if(r->prop) p *= props[r->prop];
+		f32 p = inv_sq_dist * dt;
+		if(r->prop) p *= other->props[r->prop];
+		if(r->activator) p *= self->props[r->activator];
+		agg.tidal += p;
 		f32 up = p * r->dir.y, right = p * r->dir.x;
-		self->dx += up*xd+right*yd;
-		self->dy += up*yd-right*xd;
+		agg.dx += up*xd+right*yd;
+		agg.dy += up*yd-right*xd;
 	}
 }
 
-void update(Node* self, QNode* other){
-	// TODO
+inline void finish(Node* self, QNodeAggregate& agg){
+	Node* n = self->copy();
+	n->x += n->dx += agg.dx;
+	n->y += n->dy += agg.dy;
+	drawBuf.emplace_back(vec2(n->x - cam_x, n->y - cam_y), n->radius);
+	tree->add(n);
 }
 
-inline void apply_agg(f32* agg, Node* self){
-	// TODO
+template<typename T>
+inline void update(QNodeAggregate* agg, QNode* self, T* other){
+	f32 xd = other->x - self->x, yd = other->y - self->y;
+	f32 inv_sq_dist = fast_inverse(other->rad_cap(xd*xd+yd*yd));
+	_AttractionRule* r = cur_a_rules;
+	while(++r < cur_a_rules_end){
+		f32 p = inv_sq_dist * dt;
+		QNodeAggregate* a = agg+r->agg_id;
+		a->tidal += p;
+		if(r->prop) p *= other->props[r->prop];
+		f32 up = p * r->dir.y, right = p * r->dir.x;
+		a->dx += up*xd+right*yd;
+		a->dy += up*yd-right*xd;
+	}
 }
 
-void apply_agg(f32* agg, QNode* self){
-	if(bit_cast<i32>(self->err_radius)>=0){
-		Node* n = self->chain.load(relaxed);
-		while(n){ apply_agg(agg, n); n = n->next; }
+inline void compile(QNodeAggregate& agg, Node* n, QNodeAggregate* agg1){
+	u32* r = cur_aggregates;
+	while(++r < cur_aggregates_end){
+		u32 id = *r;
+		f32 f = id ? n->props[id] : 1;
+		agg.dx += agg1->dx*f;
+		agg.dy += agg1->dy*f;
+		agg.tidal += agg1->tidal*f;
+		agg1++;
+	}
+}
+
+void finish(QNode* self, QNodeAggregate* agg){
+	if(!signbit(self->err_radius)){
+		Node* n = self->chain;
+		while(n){
+			QNodeAggregate agg2;
+			compile(agg2, n, agg);
+			finish(n, agg2);
+			n = n->next;
+		}
 	}else{
-		char* a = (char*) self->chain.load(relaxed);
-		apply_agg(agg, (QNode*) a);
-		apply_agg(agg, (QNode*)(a+=qnode_size));
-		apply_agg(agg, (QNode*)(a+=qnode_size));
-		apply_agg(agg, (QNode*)(a+=qnode_size));
+		char* a = (char*) self->chain;
+		finish((QNode*) a, agg);
+		finish((QNode*)(a+=qnode_size), agg);
+		finish((QNode*)(a+=qnode_size), agg);
+		finish((QNode*)(a+=qnode_size), agg);
 	}
 }
 
-inline void update(f32* agg, QNode* self, Node* other){
+inline void updateq(QNodeAggregate* agg, QNode* self, Node* other){
 	f32 r0 = abs(self->err_radius);
-	f32 xd = other->x - self->cmass_x, yd = other->y - self->cmass_y;
+	f32 xd = other->x - self->x, yd = other->y - self->y;
 	if(r0*r0 > xd*xd+yd*yd){
-		*(QNode**)(st_base + st_alloc(sizeof(QNode*))) = bit_cast<QNode*>(bit_cast<uptr>(other)|1);
-		return;
-	}
-	// TODO
+		*(QNode**)st_alloc(sizeof(QNode*)) = bit_cast<QNode*>(bit_cast<uptr>(other)|1);
+	}else update(agg, self, other);
 }
 
-void updatev(f32* agg, QNode* self, QNode** other, QNode** end){
+void updateq(QNodeAggregate* agg, QNode* self, QNode* other){
+	f32 r0 = abs(self->err_radius), r1 = abs(other->err_radius), r2 = r0+r1;
+	f32 xd = other->x - self->x, yd = other->y - self->y;
+	if(r2*r2 > xd*xd+yd*yd){
+		if(r1 >= r0){ if(signbit(other->err_radius)){
+			char* a = (char*) other->chain;
+			update(agg, self, (QNode*) a);
+			update(agg, self, (QNode*)(a += prev_qnode_size));
+			update(agg, self, (QNode*)(a += prev_qnode_size));
+			update(agg, self, (QNode*)(a += prev_qnode_size));
+		}else{
+			Node* n = other->chain;
+			while(n){ update(agg, self, n); n = n->next; }
+		} }else *(QNode**)st_alloc(sizeof(QNode*)) = other;
+	}else update(agg, self, other);
+}
+
+void updatev(QNodeAggregate* agg, QNode* self, QNode** other, QNode** end){
 	usize list_base = left;
 	for(; other < end; other++){
 		QNode* n = *other; uptr a = bit_cast<uptr>(n);
@@ -100,70 +161,45 @@ void updatev(f32* agg, QNode* self, QNode** other, QNode** end){
 		else update(agg, self, n);
 	}
 	usize to_pop = list_base - left;
-	if(bit_cast<i32>(self->err_radius)>=0){
+	if(!signbit(self->err_radius)){
 		other = (QNode**)(st_base + list_base); end = (QNode**)(st_base + left);
 		st_pop(to_pop); // data is still available after pop
 		switch_allocs();
-		Node* n = self->chain.load(relaxed);
+		Node* n = self->chain;
 		while(n){
-			apply_agg(agg, n);
 			QNode** o = other;
+			QNodeAggregate agg2;
 			for(; o < end; o++){
 				QNode* n2 = *o; uptr a = bit_cast<uptr>(n);
-				if(a&1) update(n, bit_cast<Node*>(a&-2));
-				else update(n, n2);
+				if(a&1) update(agg2, n, bit_cast<Node*>(a&-2));
+				else update(agg2, n, n2);
 			}
+			compile(agg2, n, agg);
+			finish(n, agg2);
 			n = n->next;
 		}
 		return;
 	}
-	char* a = (char*) self->chain.load(relaxed);
+	char* a = (char*) self->chain;
 	if(other != end){
 		usize l2 = left;
-		f32* agg2 = (f32*)(st_base + st_alloc(attr_floats*sizeof(f32)));
+		QNodeAggregate* agg2 = (QNodeAggregate*)st_alloc(attr_count*sizeof(QNodeAggregate));
 		other = (QNode**)(st_base + list_base); end = (QNode**)(st_base + l2);
-		st_pop(to_pop + attr_floats*sizeof(f32)); // data is still available after pop
+		st_pop(to_pop + attr_count*sizeof(QNodeAggregate)); // data is still available after pop
 		switch_allocs();
-		for(int i = 0; i < attr_floats; i += 3) agg2[i] = agg[i], agg2[i+1] = agg[i+1], agg2[i+2] = agg[i+2];
+		for(int i = 0; i < attr_count; i++) agg2[i] = agg[i];
 		updatev(agg2, (QNode*) a, other, end);
-		for(int i = 0; i < attr_floats; i += 3) agg2[i] = agg[i], agg2[i+1] = agg[i+1], agg2[i+2] = agg[i+2];
+		for(int i = 0; i < attr_count; i++) agg2[i] = agg[i];
 		updatev(agg2, (QNode*)(a+=qnode_size), other, end);
-		for(int i = 0; i < attr_floats; i += 3) agg2[i] = agg[i], agg2[i+1] = agg[i+1], agg2[i+2] = agg[i+2];
+		for(int i = 0; i < attr_count; i++) agg2[i] = agg[i];
 		updatev(agg2, (QNode*)(a+=qnode_size), other, end);
 		updatev(agg, (QNode*)(a+=qnode_size), other, end);
 	}else{
-		apply_agg(agg, (QNode*) a);
-		apply_agg(agg, (QNode*)(a+=qnode_size));
-		apply_agg(agg, (QNode*)(a+=qnode_size));
-		apply_agg(agg, (QNode*)(a+=qnode_size));
+		finish((QNode*) a, agg);
+		finish((QNode*)(a+=qnode_size), agg);
+		finish((QNode*)(a+=qnode_size), agg);
+		finish((QNode*)(a+=qnode_size), agg);
 	}
-}
-
-void update(f32* agg, QNode* self, QNode* other){
-	f32 r0 = abs(self->err_radius), r1 = abs(other->err_radius), r2 = r0+r1;
-	f32 xd = other->cmass_x - self->cmass_x, yd = other->cmass_y - self->cmass_y;
-	if(r2*r2 > xd*xd+yd*yd){
-		if(r1 >= r0){ if(bit_cast<i32>(other->err_radius)<0){
-			char* a = (char*) other->chain.load(relaxed);
-			update(agg, self, (QNode*) a);
-			update(agg, self, (QNode*)(a += prev_qnode_size));
-			update(agg, self, (QNode*)(a += prev_qnode_size));
-			update(agg, self, (QNode*)(a += prev_qnode_size));
-		}else{
-			Node* n = other->chain.load(relaxed);
-			while(n){ update(agg, self, n); n = n->next; }
-		} }else *(QNode**)(st_base + st_alloc(sizeof(QNode*))) = other;
-		return;
-	}
-	// TODO
-}
-
-void update_self(f32* agg, QNode* self){
-
-}
-
-void update_self(f32* agg, Node* self){
-
 }
 
 }
