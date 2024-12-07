@@ -25,10 +25,10 @@ DEFS="$DEFS -D$arg"
 declare "ARG_$arg$(expr "$arg" : ".*=.*" >/dev/null || echo "=")"
 done
 postbuild=./main
-OPTS=" -fsanitize=undefined -fsanitize=address -O1"
+OPTS=" -fsanitize=undefined -O0 -fno-omit-frame-pointer -fno-inline -rdynamic -g3"
 if [ "${ARG_RELEASE+x}" ]; then
-OPTS=" -O3"
+OPTS=" -fno-rtti -O3 -Wl,--strip-all -ffunction-sections -fdata-sections -Wl,--gc-sections -g0 -flto"
 postbuild="upx --best main"
 fi
 
-clang++ -Wno-unqualified-std-cast-call -Wno-deprecated -fno-rtti -g0 -flto -I.bin/include -Wfatal-errors -std=c++20 -Wno-overflow -fwrapv -Wno-narrowing$OPTS$DEFS src/main.cpp .bin/src/gl.c -Wl,--strip-all -ffunction-sections -fdata-sections -L.bin/lib -lSDL2 -lSDL2main -ldl -pthread -Wl,--gc-sections -Wl,--format=binary -Wl,$(find assets/*) -Wl,--format=default -o main && $postbuild
+clang++ -Wno-unqualified-std-cast-call -Wno-deprecated -I.bin/include -Wfatal-errors -std=c++20 -Wno-overflow -fwrapv -Wno-narrowing$OPTS$DEFS src/main.cpp .bin/src/gl.c -L.bin/lib -lSDL2 -lSDL2main -ldl -pthread -Wl,--format=binary -Wl,$(find assets/*) -Wl,--format=default -o main && $postbuild

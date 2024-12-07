@@ -2,8 +2,8 @@
 
 namespace physics{
 
-thread_local char *st_base = 0, *_st_base = 0;
-thread_local usize left = 0, right = 0, _left = 0, _right = 0;
+thread_local char *st_base = 0;
+thread_local usize left = 0, right = 0;
 inline void* st_alloc(usize n){
 	n = adv_aligned<alignof(f32), alignof(void*)>(n);
 	if(right < n){
@@ -13,17 +13,6 @@ inline void* st_alloc(usize n){
 	right -= n;
 	void* b = st_base+left; left += n;
 	return b;
-}
-inline void _trim_alloc(){
-	if(right > sizeof(void*)<<8)
-		st_base = (char*) realloc(st_base, right>>=1);
-	else if(right < sizeof(void*)<<6){
-		free(st_base); st_base = (char*) malloc(right = sizeof(void*)<<6);
-	}
-}
-inline void switch_allocs(){
-	swap(st_base, _st_base);
-	swap(left, _left); swap(right, _right);
 }
 
 inline void st_pop(usize n){ right += n; left -= n; }
@@ -128,11 +117,28 @@ void finish(QNode* self, QNodeAggregate* agg){
 	}
 }
 
-inline void updateq(QNodeAggregate* agg, QNode* self, Node* other){
+void updateq(QNodeAggregate* agg, QNode* self, Node* other){
 	f32 r0 = abs(self->err_radius);
 	f32 xd = other->x - self->x, yd = other->y - self->y;
 	if(r0*r0 > xd*xd+yd*yd){
 		*(QNode**)st_alloc(sizeof(QNode*)) = bit_cast<QNode*>(bit_cast<uptr>(other)|1);
+	}else update(agg, self, other);
+}
+
+void updateq(QNodeAggregate& agg, Node* self, QNode* other){
+	f32 r0 = abs(other->err_radius);
+	f32 xd = other->x - self->x, yd = other->y - self->y;
+	if(r0*r0 > xd*xd+yd*yd){
+		if(signbit(other->err_radius)){
+			char* a = (char*) other->chain;
+			updateq(agg, self, (QNode*) a);
+			updateq(agg, self, (QNode*)(a += prev_qnode_size));
+			updateq(agg, self, (QNode*)(a += prev_qnode_size));
+			updateq(agg, self, (QNode*)(a += prev_qnode_size));
+		}else{
+			Node* n = other->chain;
+			while(n){ update(agg, self, n); n = n->next; }
+		}
 	}else update(agg, self, other);
 }
 
@@ -142,10 +148,10 @@ void updateq(QNodeAggregate* agg, QNode* self, QNode* other){
 	if(r2*r2 > xd*xd+yd*yd){
 		if(r1 >= r0){ if(signbit(other->err_radius)){
 			char* a = (char*) other->chain;
-			update(agg, self, (QNode*) a);
-			update(agg, self, (QNode*)(a += prev_qnode_size));
-			update(agg, self, (QNode*)(a += prev_qnode_size));
-			update(agg, self, (QNode*)(a += prev_qnode_size));
+			updateq(agg, self, (QNode*) a);
+			updateq(agg, self, (QNode*)(a += prev_qnode_size));
+			updateq(agg, self, (QNode*)(a += prev_qnode_size));
+			updateq(agg, self, (QNode*)(a += prev_qnode_size));
 		}else{
 			Node* n = other->chain;
 			while(n){ update(agg, self, n); n = n->next; }
@@ -157,14 +163,12 @@ void updatev(QNodeAggregate* agg, QNode* self, QNode** other, QNode** end){
 	usize list_base = left;
 	for(; other < end; other++){
 		QNode* n = *other; uptr a = bit_cast<uptr>(n);
-		if(a&1) update(agg, self, bit_cast<Node*>(a&-2));
-		else update(agg, self, n);
+		if(a&1) updateq(agg, self, bit_cast<Node*>(a&-2));
+		else updateq(agg, self, n);
 	}
-	usize to_pop = list_base - left;
+	other = (QNode**)(st_base + list_base); end = (QNode**)(st_base + left);
 	if(!signbit(self->err_radius)){
-		other = (QNode**)(st_base + list_base); end = (QNode**)(st_base + left);
-		st_pop(to_pop); // data is still available after pop
-		switch_allocs();
+		st_pop(left - list_base);
 		Node* n = self->chain;
 		while(n){
 			QNode** o = other;
@@ -172,7 +176,7 @@ void updatev(QNodeAggregate* agg, QNode* self, QNode** other, QNode** end){
 			for(; o < end; o++){
 				QNode* n2 = *o; uptr a = bit_cast<uptr>(n);
 				if(a&1) update(agg2, n, bit_cast<Node*>(a&-2));
-				else update(agg2, n, n2);
+				else updateq(agg2, n, n2);
 			}
 			compile(agg2, n, agg);
 			finish(n, agg2);
@@ -182,15 +186,14 @@ void updatev(QNodeAggregate* agg, QNode* self, QNode** other, QNode** end){
 	}
 	char* a = (char*) self->chain;
 	if(other != end){
-		usize l2 = left;
 		QNodeAggregate* agg2 = (QNodeAggregate*)st_alloc(attr_count*sizeof(QNodeAggregate));
-		other = (QNode**)(st_base + list_base); end = (QNode**)(st_base + l2);
-		st_pop(to_pop + attr_count*sizeof(QNodeAggregate)); // data is still available after pop
-		switch_allocs();
+		usize agg_i2 = (char*)agg2-st_base;
 		for(int i = 0; i < attr_count; i++) agg2[i] = agg[i];
 		updatev(agg2, (QNode*) a, other, end);
+		agg2 = (QNodeAggregate*)(st_base + agg_i2);
 		for(int i = 0; i < attr_count; i++) agg2[i] = agg[i];
 		updatev(agg2, (QNode*)(a+=qnode_size), other, end);
+		agg2 = (QNodeAggregate*)(st_base + agg_i2);
 		for(int i = 0; i < attr_count; i++) agg2[i] = agg[i];
 		updatev(agg2, (QNode*)(a+=qnode_size), other, end);
 		updatev(agg, (QNode*)(a+=qnode_size), other, end);
@@ -200,6 +203,7 @@ void updatev(QNodeAggregate* agg, QNode* self, QNode** other, QNode** end){
 		finish((QNode*)(a+=qnode_size), agg);
 		finish((QNode*)(a+=qnode_size), agg);
 	}
+	st_pop((left - list_base) + attr_count*sizeof(QNodeAggregate));
 }
 
 }

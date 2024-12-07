@@ -41,7 +41,7 @@ struct Simulation{
 		for(usize i = 0; i < attr_count; i++) attr[i] = a_ids[i];
 		_AttractionRule* _a_rules = (_AttractionRule*) (constant_block + size1);
 		for(usize i = 0; i < sz2; i++) _a_rules[i] = a_rules[i].convert(a_r_ids[i]);
-		delete[] a_r_ids;
+		free(a_r_ids);
 		p->prop_count = prop_count; p->attr_count = attr_count;
 		p->arule_count = a_rules.size();
 		p->node_size = adv_aligned<alignof(Node)>(offsetof(Node, props) + sizeof(f32) * prop_count);
@@ -99,6 +99,8 @@ void work(SimData& dat, int a){
 	else dat.stage1.wait();
 	while(1){
 		if(!dat.running.test()){ if(!(a>>1)) dat.stage1.unlock_all(); break; }
+		prev_node_size = node_size; prev_qnode_size = qnode_size;
+		prev_prop_count = prop_count;
 		if(params->changed){
 			i_theta = params->i_theta;
 			cur_aggregates = (u32*) (params->constant_block);
@@ -106,10 +108,8 @@ void work(SimData& dat, int a){
 			cur_a_rules = (_AttractionRule*) cur_aggregates_end;
 			cur_a_rules_end = cur_a_rules + params->arule_count * sizeof(_AttractionRule);
 			cur_aggregates--; cur_a_rules--;
-			prev_node_size = node_size; prev_qnode_size = qnode_size;
 			node_size = params->node_size; qnode_size = params->qnode_size;
-			prev_prop_count = prop_count; prop_count = params->prop_count;
-			attr_count = params->attr_count;
+			prop_count = params->prop_count; attr_count = params->attr_count;
 		}
 		cam_x = params->cam_x; cam_y = params->cam_y;
 		if(!(a>>1)){
@@ -126,20 +126,18 @@ void work(SimData& dat, int a){
 		}
 		char* r = dat.old_roots; usize q5 = qnode_size*5; f64 sz = dat.prev_size;
 		dt = params->dt;
-		_trim_alloc(); switch_allocs(); _trim_alloc();
-		if(right > sizeof(usize)<<8)
+		if(right > sizeof(void*)<<28)
 			st_base = (char*) realloc(st_base, right>>=1);
-		else if(right < sizeof(usize)<<6){
-			free(st_base); st_base = (char*) realloc(st_base, right = sizeof(usize)<<6);
-		}
+		else if(right < sizeof(void*)<<16)
+			st_base = (char*) realloc(st_base, right = sizeof(void*)<<16);
 		for(;;){
 			usize task = dat.task_number++;
 			if(task >= dat.tasks.size()) break;
 			QNode* qn = dat.tasks[task];
 			QNodeAggregate* agg = (QNodeAggregate*)st_alloc(attr_count*sizeof(QNodeAggregate));
 			for(int i=0;i<attr_count;i++) construct_at(agg+i);
-			switch_allocs();
-			QNode* qns[4] = {(QNode*)r, (QNode*)(r+q5), 0, 0}; qns[2]=qns[1]+q5;qns[3]=qns[2]+q5;
+			char* r2 = r+q5;
+			QNode* qns[4] = {(QNode*)r, (QNode*)r2, (QNode*)(r2+q5), 0}; qns[3] = (QNode*)(r2+q5);
 			updatev(agg, qn, qns, qns+4);
 			st_pop(attr_count*sizeof(QNodeAggregate));
 		}
@@ -199,7 +197,7 @@ void work(SimData& dat, int a){
 			dat.stage1.wait();
 		}
 	}
-	free(st_base); free(_st_base);
+	free(st_base);
 	free_all();
 }
 
