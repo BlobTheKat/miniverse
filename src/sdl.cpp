@@ -71,7 +71,8 @@ struct{
 vec4 mouse;
 int keyCount;
 const Uint8* keys;
-SDL_mutex* mut;
+a_lock mut;
+bool run = true;
 SDL_Window* win;
 int render(void* a){
 	win = (SDL_Window*) a;
@@ -89,7 +90,7 @@ int render(void* a){
 	if(SDL_GL_SetSwapInterval(-1)) SDL_GL_SetSwapInterval(1);
 	init();
 	uint64_t start = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-	while(1){
+	while(run){
 		double ot=t;
 		t = double(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count()-start)*1e-9;
 		dt = t-ot;
@@ -99,10 +100,15 @@ int render(void* a){
 		SDL_GL_GetDrawableSize(win, &window.width, &window.height);
 		glViewport(0, 0, window.width, window.height);
 		pointerLocked = SDL_GetRelativeMouseMode();
-		SDL_LockMutex(mut);
+		mut.lock();
 		frame();
 		mouse = 0;
-		SDL_UnlockMutex(mut);
+		if(!run){
+			SDL_DestroyWindow(win);
+			mut.unlock();
+			return 0;
+		}
+		mut.unlock();
 		SDL_GL_SwapWindow(win);
 	}
 	return 0;
@@ -119,14 +125,17 @@ int main(int argc, char** argv){
 	int size; SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &size);
 	if(size < 24) SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_Window* win = SDL_CreateWindow("Miniverse", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-	mut = SDL_CreateMutex();
-	SDL_CreateThread(render, NULL, win);
+	SDL_Thread* r = SDL_CreateThread(render, NULL, win);
 	while(1){
 		SDL_Event e;
 		SDL_WaitEvent(&e);
-		SDL_LockMutex(mut);
+		mut.lock();
 		switch(e.type){
-			case SDL_QUIT: SDL_UnlockMutex(mut); return 0;
+			case SDL_QUIT:
+				run = false;
+				mut.unlock();
+				SDL_WaitThread(r, NULL);
+				return 0;
 			case SDL_KEYDOWN:
 			if(e.key.repeat) break;
 			if(e.key.keysym.sym == SDLK_ESCAPE){
@@ -150,7 +159,7 @@ int main(int argc, char** argv){
 			pointerLocked = true;
 			break;
 		}
-		SDL_UnlockMutex(mut);
+		mut.unlock();
 	}
 	return 0;
 }

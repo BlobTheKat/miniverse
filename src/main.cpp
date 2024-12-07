@@ -80,7 +80,3 @@ inline void frame(){
 		}
 	}
 }
-
-inline void pausemenu(){
-
-}
