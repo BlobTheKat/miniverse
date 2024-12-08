@@ -7,7 +7,7 @@ namespace physics{
 // 3. Once everyone's done, simulate our thread's node against itself and against others' nodes
 // 4. During 3, emit new nodes into a linked-list allocated on a block-chain allocator (Not the crypto one!)
 
-constexpr int BLOCK_SIZE = 1, BLOCK_BYTES = (BLOCK_SIZE<<16) - sizeof(char*);
+constexpr int BLOCK_SIZE = 4, BLOCK_BYTES = (BLOCK_SIZE<<16) - sizeof(char*);
 
 thread_local char *p_root = 0, *p_old_root = 0;
 thread_local char *block = (char*) &p_root, **block_end = &p_root;
@@ -26,9 +26,6 @@ void free_swap(){
 	}
 	a = p_old_root; p_old_root = p_root; p_root = a;
 	block = (char*) (block_end = &p_root);
-	a = p_root;
-	int sz = 0;
-	while(a){ sz += 64; a = *(char**)(a+BLOCK_BYTES);}
 }
 void free_all(){
 	return;
@@ -73,9 +70,9 @@ struct UpdateParams{
 };
 
 struct UpdateResult{
-	atomic_int ref_count = 1;
+	atomic_int ref_count = 1; int draw_count;
 	usize node_count;
-	int draw_count;
+	f64 cam_x, cam_y;
 	vector<Sprite> draw_data[0];
 	UpdateResult(int dc) : draw_count(dc){
 		while(dc) new (&draw_data[--dc]) vector<Sprite>();
@@ -143,18 +140,21 @@ struct QNode{
 		if constexpr(shallow){
 			uptr x = bit_cast<uptr>(chain);
 			if(!(x&1)) return;
-			char *a = bit_cast<char*>(x&-2), *a1 = a;
-			chain = (Node*) a;
+			if(!(chain = bit_cast<Node*>(x&-2))){
+				cmass_x = 0; cmass_y = 0; err_radius = 0;
+				for(int i = 0; i < prop_count; i++) props[i] = 0;
+				return;
+			}
 		}else if(node_count.load(relaxed) <= QNode::LEAF_CAPACITY){
 			node_count.~atomic();
-			if(!chain){
-				cmass_x = 0; cmass_y = 0; err_radius = 0.f;
+			if(!chain){ no_chain:
+				cmass_x = 0; cmass_y = 0; err_radius = 0;
 				for(int i = 0; i < prop_count; i++) props[i] = 0;
 				return;
 			}
 			mass = chain->mass;
 			Node* n = chain->next;
-			f64 cx = 0, cy = 0;
+			f64 cx = chain->x*mass, cy = chain->y*mass;
 			while(n){ f32 m = n->mass; mass += m; cx += n->x*m; cy += n->y*m; n = n->next; }
 			f32 i_mass = mass ? 1/mass : 1, f = chain->mass*i_mass, e = 0;
 			cmass_x = cx*i_mass; cmass_y = cy*i_mass;
@@ -187,14 +187,6 @@ struct QNode{
 		cx += (((QNode*)(a1+=qnode_size))->cmass_x)*fc; cy += (((QNode*)a1)->cmass_y)*fc;
 		cx += (((QNode*)(a1+=qnode_size))->cmass_x)*fd; cy += (((QNode*)a1)->cmass_y)*fd;
 		cmass_x = cx; cmass_y = cy;
-		a1 = a; f64 dcx = ((QNode*)a1)->cmass_x-cx, dcy = ((QNode*)a1)->cmass_y-cy;
-		f32 e = (dcx*dcx+dcy*dcy)*(1+(2+fa)*fa);
-		dcx = ((QNode*)(a1+=qnode_size))->cmass_x-cx; dcy = ((QNode*)a1)->cmass_y-cy;
-		e += (dcx*dcx+dcy*dcy)*(1+(2+fb)*fb);
-		dcx = ((QNode*)(a1+=qnode_size))->cmass_x-cx; dcy = ((QNode*)a1)->cmass_y-cy;
-		e += (dcx*dcx+dcy*dcy)*(1+(2+fc)*fc);
-		dcx = ((QNode*)(a1+=qnode_size))->cmass_x-cx; dcy = ((QNode*)a1)->cmass_y-cy;
-		e += (dcx*dcx+dcy*dcy)*(1+(2+fd)*fd);
 		for(int i = 1; i < prop_count; i++){
 			f32 f = ((QNode*)(a1=a))->props[i]*fa;
 			f += ((QNode*)(a1+=qnode_size))->props[i]*fb;
@@ -202,7 +194,15 @@ struct QNode{
 			f += ((QNode*)(a1+=qnode_size))->props[i]*fd;
 			props[i] = f;
 		}
-		err_radius = -fast_sqrt(e);
+		a1 = a; f64 dcx = ((QNode*)a1)->cmass_x-cx, dcy = ((QNode*)a1)->cmass_y-cy;
+		f32 e = fast_sqrt(dcx*dcx+dcy*dcy)*i_theta+abs(((QNode*)a1)->err_radius);
+		dcx = ((QNode*)(a1+=qnode_size))->cmass_x-cx; dcy = ((QNode*)a1)->cmass_y-cy;
+		e = max(e, fast_sqrt(dcx*dcx+dcy*dcy)*i_theta+abs(((QNode*)a1)->err_radius));
+		dcx = ((QNode*)(a1+=qnode_size))->cmass_x-cx; dcy = ((QNode*)a1)->cmass_y-cy;
+		e = max(e, fast_sqrt(dcx*dcx+dcy*dcy)*i_theta+abs(((QNode*)a1)->err_radius));
+		dcx = ((QNode*)(a1+=qnode_size))->cmass_x-cx; dcy = ((QNode*)a1)->cmass_y-cy;
+		e = max(e, fast_sqrt(dcx*dcx+dcy*dcy)*i_theta+abs(((QNode*)a1)->err_radius));
+		err_radius = -e;
 	}
 };
 static_assert(alignof(QNode) > 1 && alignof(Node) > 1);
@@ -223,6 +223,8 @@ struct QNStack{
 	void add(Node* n){
 		count++;
 		f64 x = n->x, y = n->y;
+		if(!isfinite(x)) x = n->x = n->dx = 0;
+		if(!isfinite(y)) y = n->y = n->dy = 0;
 		find:
 		f64 xm = d->xm, ym = d->ym;
 		f64 xd = x-xm, yd = y-ym;
@@ -263,8 +265,7 @@ struct QNStack{
 			}
 			qn->node_count.fetch_add(a-LOCK, release);
 			deeper:
-			xd = n->x-xm; yd = n->y-ym;
-			int i = _signextractd(xd, yd);
+			int i = 3-_signextractd(xd, yd);
 			d->count = count-1; size *= .5;
 			if(!right){
 				right = left; left++;
@@ -273,6 +274,7 @@ struct QNStack{
 			qn = d->qn = (QNode*)((char*)qn->chain+i*qnode_size);
 			d->xm = xm += copysign(size, xd);
 			d->ym = ym += copysign(size, yd);
+			xd = x-xm; yd = y-ym;
 			goto found2;
 		}
 		up:
@@ -287,13 +289,13 @@ struct QNStack{
 				if(qnt){
 					i = _signextractd(xm, ym)*qnode_size;
 					QNode *qn = (QNode*)(a+i*5);
-					if(qn == d->qn) qn = (QNode*)((char*)qn->chain + i);
 					while(qn != qnt){
 						qn->node_count.fetch_add(count, relaxed);
 						qn = (QNode*)((char*)qn->chain + i);
 					}
 				}
 				xm = d->xm = copysign(size, x); ym = d->ym = copysign(size, y);
+				xd = x-xm; yd = y-ym;
 				goto found;
 			}
 			dat->rootLock.lock();
@@ -328,11 +330,11 @@ struct QNStack{
 			if(a) d->qn->node_count.fetch_add(a, relaxed);
 		}
 		if(d->qn){
-			int j = _signextractd(d->xm, d->ym)*qnode_size;
-			QNode *qn = (QNode*)(dat->roots.load(acquire) + j*5);
+			int i = _signextractd(d->xm, d->ym)*qnode_size;
+			QNode *qn = (QNode*)(dat->roots.load(acquire) + i*5);
 			while(qn != d->qn){
 				qn->node_count.fetch_add(count, relaxed);
-				qn = (QNode*)((char*)qn->chain + j);
+				qn = (QNode*)((char*)qn->chain + i);
 			}
 			d->qn = 0;
 		}
@@ -343,7 +345,7 @@ struct QNStack{
 			d = (QNStackEntry*) realloc(d, (right+1)*sizeof(QNStackEntry));
 		}
 	}
-	~QNStack(){free(d);}
+	~QNStack(){free(d-left);}
 };
 
 thread_local QNStack* tree;

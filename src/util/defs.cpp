@@ -33,13 +33,13 @@
 //}
 	typedef SSIZE_T ssize_t;
 	typedef SIZE_T size_t;
-	void* page_alloc(size_t c = 1){void* a=VirtualAlloc(0, c<<16, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);if(!a)abort();return a;}
-	void page_free(void* ptr, size_t c = 1){VirtualFree(0, c<<16, MEM_RELEASE|MEM_DECOMMIT);}
+	inline void* page_alloc(size_t c = 1){void* a=VirtualAlloc(0, c<<16, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);if(!a)abort();return a;}
+	inline void page_free(void* ptr, size_t c = 1){VirtualFree(ptr, 0, MEM_RELEASE);}
 #else
 	#include <sys/types.h>
 	#include <sys/mman.h>
-	void* page_alloc(size_t c = 1){void* a=mmap(0, c<<16, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);if(uintptr_t(a)==-1)abort();return a;}
-	void page_free(void* ptr, size_t c = 1){munmap(ptr, c<<16);}
+	inline void* page_alloc(size_t c = 1){void* a=mmap(0, c<<16, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);if(uintptr_t(a)==-1)abort();return a;}
+	inline void page_free(void* ptr, size_t c = 1){munmap(ptr, c<<16);}
 #endif
 
 using namespace std;

@@ -2,7 +2,7 @@
 #include "scene.h"
 #include "sim/sim.cpp"
 
-GLint whUni, whUniStar;
+GLint whUni, whUniStar, xyUni;
 GLuint objShader, starShader;
 
 GLuint buf, va;
@@ -19,6 +19,7 @@ inline void init(){
 
 	objShader = makePipeline(asset(obj_vert), asset(obj_frag));
 	whUni = glGetUniformLocation(objShader, "i_wh");
+	xyUni = glGetUniformLocation(objShader, "xy_off");
 	starShader = makePipeline(asset(fullscreen_vert), asset(star_frag));
 	whUniStar = glGetUniformLocation(starShader, "wh");
 
@@ -26,10 +27,18 @@ inline void init(){
 	glGenVertexArrays(1, &va);
 	glBindVertexArray(va);
 	glBindBuffer(GL_ARRAY_BUFFER, buf);
-	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(0); glEnableVertexAttribArray(1);
 	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(physics::Sprite), 0);
+	glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, true, sizeof(physics::Sprite), (void*)offsetof(physics::Sprite, color));
 	glVertexAttribDivisor(0, 1);
+	glVertexAttribDivisor(1, 1);
 	glBindVertexArray(0);
+	sim.add_attraction_rule({
+		.prop = 0,
+		.activator = 0,
+		.dir = vec2(0, 1.),
+		.name = "Gravity"
+	});
 	sim.add_node(0, 0, 10, 100);
 	srand(time(0));
 	for(int i=0; i < 40'000; i++){
@@ -72,6 +81,7 @@ inline void frame(){
 	glBindVertexArray(va);
 	physics::UpdateResultHandle draw = sim.result();
 	if(draw){
+		glUniform2f(xyUni, cam.x - draw->cam_x, cam.y - draw->cam_y);
 		for(int i = draw->draw_count; i;){
 			vector<physics::Sprite>& buf = draw->draw_data[--i];
 			usize sz = buf.size();

@@ -25,7 +25,7 @@ struct AttractionRule{
 
 thread_local f32 dt, i_theta, tidal_sample_x, tidal_sample_y;
 thread_local int prev_prop_count = 0, prev_qnode_size = 0, prev_node_size = 0;
-thread_local int prop_count, qnode_size, node_size, attr_count;
+thread_local int prop_count, qnode_size, node_size, attr_count, attr_block_size;
 thread_local u32 *cur_aggregates, *cur_aggregates_end;
 thread_local _AttractionRule* cur_a_rules, *cur_a_rules_end;
 
