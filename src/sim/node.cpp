@@ -2,19 +2,12 @@
 
 namespace physics{
 
-struct bf16{
-	u16 v;
-	bf16() : v(0){}
-	operator f32(){return bit_cast<f32>(v<<16);}
-	bf16(f32 a) : v(bit_cast<u32>(a)>>16){}
-};
-using hvec2 = vec<bf16, 2>;
-inline f32 fast_inverse(f32 x){
+/*inline f32 fast_inverse(f32 x){
 	// Best polynomial for log-accuracy: 0x7ef08eb3
 	// Best polynomial for linear-accuracy: 0x7ef08dcb
 	f32 f = bit_cast<f32>(0x7ef08eb3 - (bit_cast<u32>(x)));
 	return f*(2-x*f);
-}
+}*/
 // x*Q_sqrt(x)
 inline f32 fast_sqrt(f32 x){
 	f32 f = bit_cast<f32>(0x5f3759df - (bit_cast<u32>(x)>>1));

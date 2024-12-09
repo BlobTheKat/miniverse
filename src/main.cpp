@@ -42,13 +42,13 @@ inline void init(){
 		.dir = vec2(0, 1.),
 		.name = "Gravity"
 	});
-	sim.add_node(0, 0, 10, 1);
+	sim.add_node(0, 0, 10, 100);
 	srand(time(0));
-	for(int i=0; i < 20'000; i++){
+	for(int i=0; i < COUNT; i++){
 		f32 r = f32(rand()) * (PI2/RAND_MAX);
 		f32 ax = sin(r), ay = cos(r);
 		f32 dx = ay*.1, dy = ax*-.1;
-		sim.add_node(ax*i, ay*i, 1, 0, dx, dy);
+		sim.add_node(ax*i, ay*i, 1, 1, dx, dy);
 	}
 }
 
@@ -86,6 +86,7 @@ inline void frame(){
 	glBindVertexArray(va);
 	physics::UpdateResultHandle draw = sim.result();
 	if(draw){
+		cout << draw->build_time << endl;
 		f32 difft = t - draw->t;
 		diffta += (difft-diffta)*dt*.2;
 		difft -= diffta;

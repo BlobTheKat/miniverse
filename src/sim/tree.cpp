@@ -101,7 +101,7 @@ struct alignas(hardware_destructive_interference_size) SimData{
 thread_local SimData* dat;
 
 struct QNode{
-	constexpr static int LEAF_CAPACITY = 8;
+	constexpr static int LEAF_CAPACITY = 18;
 	constexpr static int DEEP_BIAS = LEAF_CAPACITY+1;
 	Node* chain = 0;
 	union{
@@ -137,6 +137,7 @@ struct QNode{
 				for(int i = 0; i < prop_count; i++) props[i] = 0;
 				return;
 			}
+			// TODO: linked lists are evil (for branch prediction)
 			mass = chain->mass;
 			Node* n = chain->next;
 			f64 cx = chain->x*mass, cy = chain->y*mass;
