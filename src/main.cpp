@@ -39,16 +39,16 @@ inline void init(){
 	sim.add_attraction_rule({
 		.prop = 0,
 		.activator = 0,
-		.dir = vec2(0, 1.),
+		.dir = vec2(.25, 1),
 		.name = "Gravity"
 	});
-	sim.add_node(0, 0, 10, 100);
 	srand(time(0));
-	for(int i=0; i < COUNT; i++){
-		f32 r = f32(rand()) * (PI2/RAND_MAX);
-		f32 ax = sin(r), ay = cos(r);
-		f32 dx = ay*.1, dy = ax*-.1;
-		sim.add_node(ax*i, ay*i, 1, 1, dx, dy);
+	for(int i=0; i < 100'000; i++){
+		f32 th = f32(rand()) * (PI2/RAND_MAX);
+		f32 ax = sin(th), ay = cos(th);
+		f32 dx = ay*10, dy = ax*-10;
+		f32 r = physics::fast_sqrt(i*10);
+		sim.add_node(ax*r, ay*r, 1, .1, dx, dy);
 	}
 }
 

@@ -84,11 +84,11 @@ set OPTS= -gcolumn-info /Od /Ob0 /EHsc /GR -gcodeview /Z7 -fsanitize=undefined -
 set LOPTS= /subsystem:console /DEBUG /DEBUG:FULL
 if "%ARG_RELEASE%" neq "" (
 	set OPTS= /O2 /GR- /Gy
-	set LOPTS= /release /opt:ref /subsystem:console /dynamicbase /nxcompat /highentropyva
+	set LOPTS= /release /opt:ref /opt:icf /subsystem:windows /dynamicbase /nxcompat /highentropyva
 )
 if "%ARG_PROFILE%" neq "" (
-	set OPTS= -gcolumn-info /Od /Ob0 /EHsc /GR -gcodeview /Z7 /O2
-	set LOPTS= /release /opt:ref /subsystem:console
+	set OPTS= -gcolumn-info /EHsc /GR -gcodeview /Z7 /O2
+	set LOPTS= /release /subsystem:console
 )
 
 call clang-cl -Wno-unqualified-std-cast-call -Wno-unused-command-line-argument -fuse-ld=lld -Wno-deprecated -Wno-overflow -Wno-narrowing -flto /I".bin/include" -Wfatal-errors /Dmain=SDL_main!defs!!OPTS! /std:c++20 src\main.cpp .bin\src\gl.c!assets! /link!LOPTS! /LIBPATH:".bin/lib" SDL2-static.lib SDL2main.lib advapi32.lib user32.lib gdi32.lib winmm.lib imm32.lib ole32.lib oleaut32.lib shell32.lib setupapi.lib version.lib .bin\icon.res /OUT:main.exe

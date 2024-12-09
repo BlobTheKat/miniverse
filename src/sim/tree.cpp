@@ -101,9 +101,13 @@ struct alignas(hardware_destructive_interference_size) SimData{
 thread_local SimData* dat;
 
 struct QNode{
-	constexpr static int LEAF_CAPACITY = 18;
+	constexpr static int LEAF_CAPACITY = 16;
 	constexpr static int DEEP_BIAS = LEAF_CAPACITY+1;
-	Node* chain = 0;
+	union{
+		char* qchain = 0;
+		Node* chain;
+		Node** lchain;
+	};
 	union{
 		f64 size;
 		struct{ f64 x, y; };
@@ -137,26 +141,30 @@ struct QNode{
 				for(int i = 0; i < prop_count; i++) props[i] = 0;
 				return;
 			}
-			// TODO: linked lists are evil (for branch prediction)
+			// linked lists are evil (for branch prediction)
 			mass = chain->mass;
-			Node* n = chain->next;
 			f64 cx = chain->x*mass, cy = chain->y*mass;
-			while(n){ f32 m = n->mass; mass += m; cx += n->x*m; cy += n->y*m; n = n->next; }
-			f32 i_mass = mass ? 1/mass : 1, f = chain->mass*i_mass, e = 0;
-			cmass_x = cx*i_mass; cmass_y = cy*i_mass;
-			for(int i = 1; i < prop_count; i++) props[i] = chain->props[i]*f;
-			n = chain->next;
-			while(n){
+			usize count = 2;
+			Node* n = chain->next;
+			while(n){ f32 m = n->mass; mass += m; cx += n->x*m; cy += n->y*m; n = n->next; count++; }
+			f32 i_mass = mass ? 1/mass : 1, e = 0;
+			cmass_x = cx *= i_mass; cmass_y = cy *= i_mass;
+			for(int i = 1; i < prop_count; i++) props[i] = 0;
+			n = chain;
+			Node **l = lchain = (Node**) salloc(count*sizeof(Node*));
+			*(Node***)(l++) = l+count;
+			do{
+				*l++ = n;
 				f32 f = n->mass*i_mass;
 				if(f){
 					f32 f2 = 1+f*i_theta;
-					f32 xd = n->x-cmass_x, yd = n->y-cmass_y;
+					f32 xd = n->x-cx, yd = n->y-cy;
 					e += (xd*xd+yd*yd)*(f2*f2);
 					for(int i = 1; i < prop_count; i++)
 						props[i] += n->props[i]*f;
 				}
 				n = n->next;
-			}
+			}while(n);
 			err_radius = fast_sqrt(e);
 			return;
 		}
@@ -202,6 +210,8 @@ struct QNStack{
 		union{ u64 count; u8 unverified; };
 		QNode* qn;
 	};
+	f64 cam_x, cam_y, cam_hw, cam_hh;
+	vector<Sprite> drawBuf;
 	QNStackEntry* d; f64 size = -1;
 	usize count = 0;
 	size_t left = 0, right = 3;
@@ -209,11 +219,14 @@ struct QNStack{
 		d = (QNStackEntry*) malloc(sizeof(QNStackEntry)<<2);
 		d->qn = 0; d->xm = d->ym = 0; d->unverified = 1;
 	}
-	void add(Node* n){
+	inline void add(Node* n){ add(n, n->dx, n->dy); }
+	void add(Node* n, f32 dx, f32 dy){
 		count++;
 		f64 x = n->x, y = n->y;
-		if(!isfinite(x)) x = n->x = n->dx = 0;
-		if(!isfinite(y)) y = n->y = n->dy = 0;
+		if(!isfinite(x)) x = n->x = n->dx = dx = 0;
+		if(!isfinite(y)) y = n->y = n->dy = dy = 0;
+		f32 r = n->radius, xd1 = n->x - cam_x, yd1 = n->y - cam_y;
+		if(abs(xd1)-abs(dx)-r < cam_hw && abs(yd1)-abs(dy)-r < cam_hh) drawBuf.emplace_back(vec2(xd1, yd1), vec2(n->dx, n->dy), r, bvec4(255));
 		find:
 		f64 xm = d->xm, ym = d->ym;
 		f64 xd = x-xm, yd = y-ym;
@@ -237,7 +250,7 @@ struct QNStack{
 				n->next = qn->chain;
 				// Split
 				char* s = (char*) salloc(qnode_size<<2);
-				qn->chain = (Node*) s;
+				qn->qchain = s;
 				Node *chains[4] = {0,0,0,0}; isize count = QNode::DEEP_BIAS;
 				while(n){
 					int i = (n->x>=xm)|(n->y>=ym)<<1; count++;
@@ -260,7 +273,7 @@ struct QNStack{
 				right = left; left++;
 				d = (QNStackEntry*) realloc(d - right, (left<<1)*sizeof(QNStackEntry)) + left;
 			}else right--, d++, left++;
-			qn = d->qn = (QNode*)((char*)qn->chain+i*qnode_size);
+			qn = d->qn = (QNode*)(qn->qchain+i*qnode_size);
 			d->xm = xm += copysign(size, xd);
 			d->ym = ym += copysign(size, yd);
 			xd = x-xm; yd = y-ym;
@@ -280,7 +293,7 @@ struct QNStack{
 					QNode *qn = (QNode*)(a+i*5);
 					while(qn != qnt){
 						qn->node_count.fetch_add(count, relaxed);
-						qn = (QNode*)((char*)qn->chain + i);
+						qn = (QNode*)(qn->qchain + i);
 					}
 				}
 				xm = d->xm = copysign(size, x); ym = d->ym = copysign(size, y);
@@ -294,13 +307,13 @@ struct QNStack{
 				if(xyd <= size){ dat->rootLock.unlock(); size *= .5; goto new_root; }
 				char *old = a, *a1 = a = (char*) salloc(qnode_size<<4);
 				for(char* b = a+(qnode_size<<4); b > a;) (new (b -= qnode_size) QNode())->size = size;
-				((QNode*)a1)->chain = (Node*)old;
+				((QNode*)a1)->qchain = old;
 				((QNode*)a1)->node_count.store(QNode::DEEP_BIAS, relaxed);
-				((QNode*)(a1+=q5))->chain = (Node*)(old+=qnode_size<<2);
+				((QNode*)(a1+=q5))->qchain = old+=qnode_size<<2;
 				((QNode*)a1)->node_count.store(QNode::DEEP_BIAS, relaxed);
-				((QNode*)(a1+=q5))->chain = (Node*)(old+=qnode_size<<2);
+				((QNode*)(a1+=q5))->qchain = old+=qnode_size<<2;
 				((QNode*)a1)->node_count.store(QNode::DEEP_BIAS, relaxed);
-				((QNode*)(a1+=q5))->chain = (Node*)(old+=qnode_size<<2);
+				((QNode*)(a1+=q5))->qchain = old+=qnode_size<<2;
 				((QNode*)a1)->node_count.store(QNode::DEEP_BIAS, relaxed);
 				dat->roots.store(a, release);
 				size *= 2;
@@ -323,7 +336,7 @@ struct QNStack{
 			QNode *qn = (QNode*)(dat->roots.load(acquire) + i*5);
 			while(qn != d->qn){
 				qn->node_count.fetch_add(count, relaxed);
-				qn = (QNode*)((char*)qn->chain + i);
+				qn = (QNode*)(qn->qchain + i);
 			}
 			d->qn = 0;
 		}

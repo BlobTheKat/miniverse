@@ -114,16 +114,16 @@ struct Simulation{
 	}
 };
 void add(QNode* qn, usize size_limit){
-	char* a = (char*) qn->chain;
+	char* a = qn->qchain;
 	if(qn->node_count.load(relaxed) > size_limit){
 		f64 sz = qn->size*.5;
-		qn->chain = bit_cast<Node*>(bit_cast<uptr>(a)|1);
+		qn->qchain = bit_cast<char*>(bit_cast<uptr>(a)|1);
 		((QNode*)a)->size = sz; add((QNode*)a, size_limit); 
 		((QNode*)(a+=qnode_size))->size = sz; add((QNode*)a, size_limit);
 		((QNode*)(a+=qnode_size))->size = sz; add((QNode*)a, size_limit);
 		((QNode*)(a+=qnode_size))->size = sz; add((QNode*)a, size_limit);
 	}else if(a) dat->tasks.push_back(qn);
-	else qn->chain = bit_cast<Node*>(uptr(1));
+	else qn->qchain = bit_cast<char*>(uptr(1));
 }
 constexpr usize SMALLEST_MAX_TASK_SIZE = 100000;
 
@@ -133,17 +133,20 @@ void print_tree(QNode* a, int ind){
 	if(!a) return void(cout << i << "null\n");
 	cout << i << "\x1b[32mQNode(" << a->cmass_x << ", " << a->cmass_y << ") ~ " << abs(a->err_radius) << ", mass=" << a->mass << "\x1b[m\n";
 	if(signbit(a->err_radius)){
-		char* x = (char*)a->chain;
+		char* x = a->qchain;
 		print_tree((QNode*)x, ++ind);
 		print_tree((QNode*)(x+=prev_qnode_size), ind);
 		print_tree((QNode*)(x+=prev_qnode_size), ind);
 		print_tree((QNode*)(x+=prev_qnode_size), ind);
 	}else{
 		i += "  ";
-		Node* n = a->chain;
-		while(n){
-			cout << i << "- (" << n->x << ", " << n->y << "), mass=" << n->mass << "\n";
-			n = n->next;
+		Node** n = a->lchain;
+		if(n){
+			Node** end = (Node**)(*n++);
+			while(n < end){
+				Node* n1 = *n++;
+				cout << i << "- (" << n1->x << ", " << n1->y << "), mass=" << n1->mass << "\n";
+			}
 		}
 	}
 }
@@ -168,19 +171,21 @@ void work(SimData& dat, int a){
 			prop_count = params->prop_count; attr_count = params->attr_count;
 			attr_block_size = adv_aligned<alignof(QNode*)>(attr_count * sizeof(QNodeAggregate));
 		}
-		cam_x = params->cam_x; cam_y = params->cam_y;
-		cam_hw = params->cam_hw; cam_hh = params->cam_hh;
+		st.cam_x = params->cam_x; st.cam_y = params->cam_y;
+		st.cam_hw = params->cam_hw; st.cam_hh = params->cam_hh;
 		if(!(a>>1)){
 			dat.start = chrono::high_resolution_clock::now();
 			dat.waiting = dat.thr_count;
 			dat.task_number = 0;
 			dat.old_roots = dat.roots.load(relaxed);
-			/*char* x = dat.old_roots;
+#ifdef PRINT_TREE
+			char* x = dat.old_roots;
 			print_tree((QNode*)x, 0);
 			print_tree((QNode*)(x+=prev_qnode_size*5), 0);
 			print_tree((QNode*)(x+=prev_qnode_size*5), 0);
 			print_tree((QNode*)(x+=prev_qnode_size*5), 0);
-			cout << "\n\x1b[31m================\n\n\x1b[m";*/
+			cout << "\n\x1b[31m================\n\n\x1b[m";
+#endif
 			char* a = (char*) salloc(qnode_size<<4);
 			f64 sz = max(1., dat.prev_size*.5);
 			for(char* b = a+(qnode_size<<4); b > a;) (new (b -= qnode_size) QNode())->size = sz;
@@ -201,14 +206,17 @@ void work(SimData& dat, int a){
 			usize lst = st_alloc(4*sizeof(QNode*)), agg = st_alloc(attr_block_size);
 			QNodeAggregate* aggf = (QNodeAggregate*)(st_base+agg);
 			for(int i=0;i<attr_count;i++) construct_at(aggf+i);
-			QNode** list = (QNode**)(st_base+lst);
+			QNode **list = (QNode**)(st_base+lst), **l1 = list;
 			char* r2 = r;
-			list[0] = (QNode*)r2; list[1] = (QNode*)(r2+=q5); list[2] = (QNode*)(r2+=q5); list[3] = (QNode*)(r2+=q5);
-			updatev(agg, qn, lst, lst + 4*sizeof(QNode*));
+			if(((QNode*)r2)->chain) *l1++ = (QNode*) r2;
+			if(((QNode*)(r2+=q5))->chain) *l1++ = (QNode*) r2;
+			if(((QNode*)(r2+=q5))->chain) *l1++ = (QNode*) r2;
+			if(((QNode*)(r2+=q5))->chain) *l1++ = (QNode*) r2;
+			updatev(agg, qn, lst, lst + (l1-list)*sizeof(QNode*));
 			st_pop(attr_block_size+4*sizeof(QNode*));
 		}
 
-		if(--dat.waiting){ swap(params->res->draw_data[a>>1], drawBuf); drawBuf.clear(); st.finish(); dat.stage2.wait(); }
+		if(--dat.waiting){ swap(params->res->draw_data[a>>1], st.drawBuf); st.finish(); dat.stage2.wait(); }
 		else{
 			dat.stage1.lock();
 			Node* n = params->toAdd;
@@ -219,7 +227,7 @@ void work(SimData& dat, int a){
 			st.finish();
 			q5 = qnode_size*5;
 			UpdateResult* res = params->res;
-			swap(res->draw_data[a>>1], drawBuf);
+			swap(res->draw_data[a>>1], st.drawBuf);
 			dat.waiting = dat.thr_count;
 			dat.task_number = 0;
 			usize node_count = dat.node_count.load(relaxed);

@@ -16,6 +16,7 @@
 #include <thread>
 #include <syncstream>
 #include <numeric>
+#include <unordered_set>
 
 // Windows
 #ifdef _WIN32
