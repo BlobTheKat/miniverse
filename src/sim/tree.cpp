@@ -146,11 +146,14 @@ struct QNode{
 			for(int i = 1; i < prop_count; i++) props[i] = chain->props[i]*f;
 			n = chain->next;
 			while(n){
-				f32 f = n->mass*i_mass, f2 = 1+f*i_theta;
-				f32 xd = n->x-cmass_x, yd = n->y-cmass_y;
-				e += (xd*xd+yd*yd)*(f2*f2);
-				for(int i = 1; i < prop_count; i++)
-					props[i] += n->props[i]*f;
+				f32 f = n->mass*i_mass;
+				if(f){
+					f32 f2 = 1+f*i_theta;
+					f32 xd = n->x-cmass_x, yd = n->y-cmass_y;
+					e += (xd*xd+yd*yd)*(f2*f2);
+					for(int i = 1; i < prop_count; i++)
+						props[i] += n->props[i]*f;
+				}
 				n = n->next;
 			}
 			err_radius = fast_sqrt(e);
