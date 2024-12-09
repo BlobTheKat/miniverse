@@ -63,7 +63,7 @@ struct UpdateParams{
 	char* constant_block = 0;
 	int attr_count, arule_count;
 	int node_size, qnode_size, prop_count;
-	f64 cam_x, cam_y;
+	f64 cam_x, cam_y, cam_hw, cam_hh;
 	f32 dt, i_theta;
 	bool changed = false; a_lock avail = 1;
 	struct UpdateResult* res;
@@ -72,7 +72,7 @@ struct UpdateParams{
 struct UpdateResult{
 	atomic_int ref_count = 1; int draw_count;
 	usize node_count;
-	f64 cam_x, cam_y;
+	f64 cam_x, cam_y, t, build_time;
 	vector<Sprite> draw_data[0];
 	UpdateResult(int dc) : draw_count(dc){
 		while(dc) new (&draw_data[--dc]) vector<Sprite>();
@@ -82,35 +82,20 @@ struct UpdateResult{
 	}
 };
 
-struct UpdateResultHandle{
-	UpdateResult* ref;
-	operator bool(){return ref!=0;}
-	bool operator!(){return ref==0;}
-	UpdateResultHandle() = delete;
-	UpdateResultHandle(UpdateResultHandle&) = delete;
-	UpdateResultHandle(UpdateResultHandle&&) = delete;
-	UpdateResultHandle(UpdateResult* a) : ref(a){if(a)a->ref_count++;}
-	UpdateResultHandle& operator=(UpdateResultHandle) = delete;
-	UpdateResultHandle& operator=(UpdateResultHandle&) = delete;
-	UpdateResultHandle& operator=(UpdateResultHandle&&) = delete;
-	UpdateResult& operator*(){ return *ref; }
-	UpdateResult* operator->(){ return ref; }
-	~UpdateResultHandle(){ if(ref && !--ref->ref_count){ ref->~UpdateResult(); free(ref); } }
-};
-
 struct alignas(hardware_destructive_interference_size) SimData{
 	atomic<usize> task_number = 0;
 	vector<struct QNode*> tasks;
 	int thr_count = 0;
-	atomic_flag running;
+	atomic_flag running; a_lock resLock;
 	a_lock rootLock, stage1 = 1, stage2 = 0, stage3 = 0;
 	atomic<char*> roots;
 	char* old_roots;
 	atomic<int> waiting;
 	UpdateParams params[2];
 	atomic<usize> node_count;
-	atomic<UpdateResult*> latest = 0;
+	UpdateResult* latest = 0;
 	f64 prev_size = 128;
+	chrono::time_point<chrono::high_resolution_clock> start;
 };
 
 thread_local SimData* dat;

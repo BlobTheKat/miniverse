@@ -2,7 +2,7 @@
 #include "scene.h"
 #include "sim/sim.cpp"
 
-GLint whUni, whUniStar, xyUni;
+GLint whUni, whUniStar, xyUni, difftUni;
 GLuint objShader, starShader;
 
 GLuint buf, va;
@@ -20,6 +20,7 @@ inline void init(){
 	objShader = makePipeline(asset(obj_vert), asset(obj_frag));
 	whUni = glGetUniformLocation(objShader, "i_wh");
 	xyUni = glGetUniformLocation(objShader, "xy_off");
+	difftUni = glGetUniformLocation(objShader, "dt");
 	starShader = makePipeline(asset(fullscreen_vert), asset(star_frag));
 	whUniStar = glGetUniformLocation(starShader, "wh");
 
@@ -27,11 +28,13 @@ inline void init(){
 	glGenVertexArrays(1, &va);
 	glBindVertexArray(va);
 	glBindBuffer(GL_ARRAY_BUFFER, buf);
-	glEnableVertexAttribArray(0); glEnableVertexAttribArray(1);
-	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(physics::Sprite), 0);
-	glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, true, sizeof(physics::Sprite), (void*)offsetof(physics::Sprite, color));
+	glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2);
+	glVertexAttribPointer(0, 4, GL_FLOAT, false, sizeof(physics::Sprite), 0);
+	glVertexAttribPointer(1, 1, GL_FLOAT, false, sizeof(physics::Sprite), (void*)offsetof(physics::Sprite, radius));
+	glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, true, sizeof(physics::Sprite), (void*)offsetof(physics::Sprite, color));
 	glVertexAttribDivisor(0, 1);
 	glVertexAttribDivisor(1, 1);
+	glVertexAttribDivisor(2, 1);
 	glBindVertexArray(0);
 	sim.add_attraction_rule({
 		.prop = 0,
@@ -41,7 +44,7 @@ inline void init(){
 	});
 	sim.add_node(0, 0, 10, 100);
 	srand(time(0));
-	for(int i=0; i < 40'000; i++){
+	for(int i=0; i < 1'000'000; i++){
 		f32 r = f32(rand()) * (PI2/RAND_MAX);
 		f32 ax = sin(r), ay = cos(r);
 		sim.add_node(ax*i, ay*i, 1, 1);
@@ -51,12 +54,13 @@ inline void init(){
 dvec2 cam{0, 0};
 f32 tzoom = 0., zoom = 0.;
 vec2 stars_pos;
+f32 diffta = 0;
 inline void frame(){
-	sim.update(dt, cam.x, cam.y);
 	if(mouse.w) tzoom += mouse.w*-.3;
 	f32 a = pow(.001, dt);
 	zoom = tzoom*(1-a) + zoom*a;
 	f32 renderZoom = pow(2, zoom);
+	sim.update(dt, t, cam.x, cam.y, window.w*renderZoom*.125, window.h*renderZoom*.125);
 	if(pointerLocked){
 		cam -= mouse.xy*(renderZoom*.03);
 		Uint8 controls = keys[SDL_SCANCODE_W] | keys[SDL_SCANCODE_S]<<1 | keys[SDL_SCANCODE_A]<<2 | keys[SDL_SCANCODE_D]<<3 | keys[SDL_SCANCODE_SPACE]<<4 | keys[SDL_SCANCODE_LSHIFT]<<5 | keys[SDL_SCANCODE_LCTRL]<<5;
@@ -81,6 +85,11 @@ inline void frame(){
 	glBindVertexArray(va);
 	physics::UpdateResultHandle draw = sim.result();
 	if(draw){
+		cout << draw->build_time << endl;
+		f32 difft = t - draw->t;
+		diffta += (difft-diffta)*dt*.2;
+		difft -= diffta;
+		glUniform1f(difftUni, difft);
 		glUniform2f(xyUni, cam.x - draw->cam_x, cam.y - draw->cam_y);
 		for(int i = draw->draw_count; i;){
 			vector<physics::Sprite>& buf = draw->draw_data[--i];

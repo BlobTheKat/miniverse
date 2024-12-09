@@ -36,7 +36,7 @@ struct Node{
 	Node* copy();
 	static Node* create();
 	Node(){}
-	Node(f64 x, f64 y, f32 rad, f32 mass) : x(x), y(y), radius(rad), mass(mass), dx(0), dy(0){}
+	Node(f64 x, f64 y, f32 rad, f32 mass, f32 dx = 0, f32 dy = 0) : x(x), y(y), radius(rad), mass(mass), dx(dx), dy(dy){}
 };
 
 }

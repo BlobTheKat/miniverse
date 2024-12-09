@@ -4,6 +4,21 @@
 namespace physics{
 
 void work(struct SimData&, int);
+struct UpdateResultHandle{
+	UpdateResult* ref;
+	operator bool(){return ref!=0;}
+	bool operator!(){return ref==0;}
+	UpdateResultHandle() = delete;
+	UpdateResultHandle(UpdateResultHandle&) = delete;
+	UpdateResultHandle(UpdateResultHandle&&) = delete;
+	UpdateResultHandle(UpdateResult* a) : ref(a){}
+	UpdateResultHandle& operator=(UpdateResultHandle) = delete;
+	UpdateResultHandle& operator=(UpdateResultHandle&) = delete;
+	UpdateResultHandle& operator=(UpdateResultHandle&&) = delete;
+	UpdateResult& operator*(){ return *ref; }
+	UpdateResult* operator->(){ return ref; }
+	~UpdateResultHandle(){ if(ref && !--ref->ref_count){ ref->~UpdateResult(); free(ref); } }
+};
 struct Simulation{
 	vector<string> prop_names;
 	vector<AttractionRule> a_rules;
@@ -48,8 +63,9 @@ struct Simulation{
 		p->qnode_size = adv_aligned<alignof(QNode)>(offsetof(QNode, props) + sizeof(f32) * prop_count);
 		p->i_theta = 1/theta;
 	}
-	void add_node(f64 x, f64 y, f32 rad, f32 mass){
-		Node* n = new Node(x, y, rad, mass);
+	template<typename... T>
+	inline void add_node(T... a){
+		Node* n = new Node(a...);
 		n->next = toAdd; toAdd = n;
 	}
 	void add_prop(sstring&& name){
@@ -60,7 +76,7 @@ struct Simulation{
 		a_rules.emplace_back(a);
 		attr_count = -1;
 	}
-	void update(f32 dt, f64 cam_x, f64 cam_y){
+	void update(f32 dt, f64 t, f64 cam_x, f64 cam_y, f64 cam_hw, f64 cam_hh){
 		UpdateParams* p = dat.params+(tick_num&1);
 		if(!p->avail.is_locked()){ _dt += dt; return; }
 		tick_num++;
@@ -70,11 +86,18 @@ struct Simulation{
 		p->toAdd = toAdd; toAdd = 0;
 		p->dt = dt + _dt; _dt = 0;
 		p->res = new (malloc(sizeof(UpdateResult) + dat.thr_count*sizeof(vector<Sprite>))) UpdateResult(dat.thr_count);
-		p->res->cam_x = cam_x; p->res->cam_y = cam_y;
+		p->res->cam_x = cam_x; p->res->cam_y = cam_y; p->res->t = t;
 		p->cam_x = cam_x; p->cam_y = cam_y;
+		p->cam_hw = cam_hw; p->cam_hh = cam_hh;
 		p->avail.unlock();
 	}
-	UpdateResultHandle result(){return dat.latest.load(acquire);}
+	UpdateResultHandle result(){
+		dat.resLock.lock();
+		UpdateResult* r = dat.latest;
+		if(r) r->ref_count++;
+		dat.resLock.unlock();
+		return r;
+	}
 	~Simulation(){
 		dat.running.clear();
 		UpdateParams* p = dat.params+(tick_num&1);
@@ -146,7 +169,9 @@ void work(SimData& dat, int a){
 			attr_block_size = adv_aligned<alignof(QNode*)>(attr_count * sizeof(QNodeAggregate));
 		}
 		cam_x = params->cam_x; cam_y = params->cam_y;
+		cam_hw = params->cam_hw; cam_hh = params->cam_hh;
 		if(!(a>>1)){
+			dat.start = chrono::high_resolution_clock::now();
 			dat.waiting = dat.thr_count;
 			dat.task_number = 0;
 			dat.old_roots = dat.roots.load(relaxed);
@@ -173,13 +198,14 @@ void work(SimData& dat, int a){
 			usize task = dat.task_number++;
 			if(task >= dat.tasks.size()) break;
 			QNode* qn = dat.tasks[task];
-			usize agg = st_alloc(attr_block_size);
+			usize lst = st_alloc(4*sizeof(QNode*)), agg = st_alloc(attr_block_size);
 			QNodeAggregate* aggf = (QNodeAggregate*)(st_base+agg);
 			for(int i=0;i<attr_count;i++) construct_at(aggf+i);
-			char* r2 = r+q5;
-			QNode* qns[4] = {(QNode*)r, (QNode*)r2, (QNode*)(r2+=q5), 0}; qns[3] = (QNode*)(r2+q5);
-			updatev(agg, qn, qns, qns+4);
-			st_pop(attr_block_size);
+			QNode** list = (QNode**)(st_base+lst);
+			char* r2 = r;
+			list[0] = (QNode*)r2; list[1] = (QNode*)(r2+=q5); list[2] = (QNode*)(r2+=q5); list[3] = (QNode*)(r2+=q5);
+			updatev(agg, qn, lst, lst + 4*sizeof(QNode*));
+			st_pop(attr_block_size+4*sizeof(QNode*));
 		}
 
 		if(--dat.waiting){ swap(params->res->draw_data[a>>1], drawBuf); drawBuf.clear(); st.finish(); dat.stage2.wait(); }
@@ -198,8 +224,12 @@ void work(SimData& dat, int a){
 			dat.task_number = 0;
 			usize node_count = dat.node_count.load(relaxed);
 			res->node_count = node_count;
-			UpdateResult* old = dat.latest.exchange(res, acq_rel);
+			res->build_time = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now() - dat.start).count()*.001;
+			dat.resLock.lock();
+			UpdateResult* old = dat.latest;
+			dat.latest = res;
 			if(old && !--old->ref_count){ old->~UpdateResult(); free(old); }
+			dat.resLock.unlock();
 			dat.node_count.store(0, relaxed);
 			usize size_limit = QNode::DEEP_BIAS + max<usize>(SMALLEST_MAX_TASK_SIZE, node_count / (dat.thr_count * 8));
 			char* a = dat.roots.load(relaxed);

@@ -22,12 +22,12 @@ inline void st_pop(usize n){ right += n; left -= n; }
 
 
 // For an object (Δx, Δy) from the attractor, the applied force is
-// 1/|(Δx, Δy)| * complex(normalize((Δx, Δy))) * complex(dir)
+// 1/|(Δx, Δy)| * complex(normalize((Δx, Δy)))
 // (We ignore masses for now, they are trivial to include later)
 // Since normalize((Δx, Δy)) = (Δx, Δy) / |(Δx, Δy)| and
 // |(Δx, Δy)| = sqrt(Δx^2 + Δy^2), the equation simplifies to
-// 1/sqrt(Δx^2 + Δy^2) * complex((Δx, Δy)/sqrt(Δx^2 + Δy^2)) * complex(dir)
-// = 1/(Δx^2 + Δy^2) * complex((Δx, Δy)) * complex(dir)
+// 1/sqrt(Δx^2 + Δy^2) * complex((Δx, Δy)/sqrt(Δx^2 + Δy^2))
+// = 1/(Δx^2 + Δy^2) * complex((Δx, Δy))
 // Note that the two sqrt's cancel out
 // Now let's calculate tidal forces (derivative of acceleration)
 // δF = (1/sqrt(Δx^2 + Δy^2))'
@@ -42,8 +42,8 @@ inline void st_pop(usize n){ right += n; left -= n; }
 //   v  v
 // [ a -b ] >
 // [ b  a ] >
-// This number can be thought of as the vector (a,b) of acceleration per second
-// at distance (-1, 0) from the attractor (and activators of 1)
+// This number can be thought of as the vector (b,a) of acceleration per second
+// at distance (0, -1) from the attractor (and activators of 1)
 
 template<typename T>
 inline void update(QNodeAggregate& agg, Node* self, T* other){
@@ -69,7 +69,8 @@ inline void finish(Node* self, QNodeAggregate& agg){
 	// Leapfrog!
 	n->x += (dx + (n->dx += agg.dx)) * .5;
 	n->y += (dy + (n->dy += agg.dy)) * .5;
-	drawBuf.emplace_back(vec2(n->x - cam_x, n->y - cam_y), n->radius, bvec4(255));
+	f32 r = n->radius, x = n->x - cam_x, y = n->y - cam_y;
+	if(abs(x)+r < cam_hw && abs(y)+r < cam_hh) drawBuf.emplace_back(vec2(x, y), vec2(n->dx, n->dy), n->radius, bvec4(255));
 	tree->add(n);
 }
 
@@ -167,15 +168,16 @@ void updateq(usize agg, QNode* self, QNode* other){
 	}else update(agg, self, other);
 }
 
-void updatev(usize agg, QNode* self, QNode** other, QNode** end){
+void updatev(usize agg, QNode* self, usize other, usize end){
 	usize list_base = left;
-	for(; other < end; other++){
-		QNode* n = *other; uptr a = bit_cast<uptr>(n);
+	do{
+		QNode* n = *(QNode**)(st_base + other); uptr a = bit_cast<uptr>(n);
 		if(a&1) updateq(agg, self, bit_cast<Node*>(a&-2));
 		else updateq(agg, self, n);
-	}
+		other += sizeof(QNode*);
+	}while(other < end);
 	if(!signbit(self->err_radius)){
-		other = (QNode**)(st_base + list_base); end = (QNode**)(st_base + left);
+		QNode **other = (QNode**)(st_base + list_base), **end = (QNode**)(st_base + left);
 		Node* n = self->chain;
 		QNodeAggregate* aggf = (QNodeAggregate*)(st_base+agg);
 		while(n){
@@ -194,27 +196,27 @@ void updatev(usize agg, QNode* self, QNode** other, QNode** end){
 		return;
 	}
 	char* a = (char*) self->chain;
-	if(other != end){
+	if(left != list_base){
 		usize list_end = left;
 		usize agg2 = st_alloc(attr_block_size);
 		QNodeAggregate *aggf = (QNodeAggregate*)(st_base+agg), *agg2f = (QNodeAggregate*)(st_base+agg2);
 		if(((QNode*)a)->chain){
 			for(int i = 0; i < attr_count; i++) agg2f[i] = aggf[i];
-			updatev(agg2, (QNode*) a, (QNode**)(st_base + list_base), (QNode**)(st_base + list_end));
+			updatev(agg2, (QNode*) a, list_base, list_end);
 			aggf = (QNodeAggregate*)(st_base+agg); agg2f = (QNodeAggregate*)(st_base+agg2);
 		}
 		if(((QNode*)(a+=prev_qnode_size))->chain){
 			for(int i = 0; i < attr_count; i++) agg2f[i] = aggf[i];
-			updatev(agg2, (QNode*)a, (QNode**)(st_base + list_base), (QNode**)(st_base + list_end));
+			updatev(agg2, (QNode*) a, list_base, list_end);
 			aggf = (QNodeAggregate*)(st_base+agg); agg2f = (QNodeAggregate*)(st_base+agg2);
 		}
 		if(((QNode*)(a+=prev_qnode_size))->chain){
 			for(int i = 0; i < attr_count; i++) agg2f[i] = aggf[i];
-			updatev(agg2, (QNode*)(a+=prev_qnode_size), (QNode**)(st_base + list_base), (QNode**)(st_base + list_end));
+			updatev(agg2, (QNode*) a, list_base, list_end);
 		}
 		st_pop(attr_block_size);
 		if(((QNode*)(a+=prev_qnode_size))->chain)
-			updatev(agg, (QNode*)(a+=prev_qnode_size), (QNode**)(st_base + list_base), (QNode**)(st_base + list_end));
+			updatev(agg, (QNode*) a, list_base, list_end);
 	}else{
 		QNodeAggregate* aggf = (QNodeAggregate*)(st_base+agg);
 		finish((QNode*) a, aggf);
