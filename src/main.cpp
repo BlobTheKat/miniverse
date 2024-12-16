@@ -1,8 +1,10 @@
 #include "sdl.cpp"
 #include "scene.h"
 #include "sim/sim.cpp"
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
 
-GLint whUni, whUniStar, xyUni, difftUni;
+GLint whUni, whUniStar, xyUni, difftUni, noiseUni, tUni;
 GLuint objShader, starShader;
 
 GLuint buf, va;
@@ -21,9 +23,22 @@ inline void init(){
 	whUni = glGetUniformLocation(objShader, "i_wh");
 	xyUni = glGetUniformLocation(objShader, "xy_off");
 	difftUni = glGetUniformLocation(objShader, "dt");
+	noiseUni = glGetUniformLocation(objShader, "noise");
+	tUni = glGetUniformLocation(objShader, "t");
 	starShader = makePipeline(asset(fullscreen_vert), asset(star_frag));
 	whUniStar = glGetUniformLocation(starShader, "wh");
 
+	glUseProgram(objShader);
+	glUniform1i(noiseUni, 0);
+	GLuint tex;
+	glGenTextures(1, &tex);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, tex);
+	vector<u8> data; int w, h, ch;
+	stbi_uc* img = stbi_load_from_memory((stbi_uc*) asset_start(noise_png), asset_size(noise_png), &w, &h, &ch, 4);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, img);
+	stbi_image_free(img);
+	glGenerateMipmap(GL_TEXTURE_2D);
 	glGenBuffers(1, &buf);
 	glGenVertexArrays(1, &va);
 	glBindVertexArray(va);
@@ -55,16 +70,20 @@ inline void init(){
 dvec2 cam{0, 0};
 f32 tzoom = 0., zoom = 0.;
 vec2 stars_pos;
+u8 paused = 0;
 f32 diffta = 0;
 inline void frame(){
 	if(mouse.w) tzoom += mouse.w*-.3;
 	f32 a = pow(.001, dt);
 	zoom = tzoom*(1-a) + zoom*a;
 	f32 renderZoom = pow(2, zoom);
-	sim.update(dt, t, cam.x, cam.y, window.w*renderZoom*.125, window.h*renderZoom*.125);
+	sim.update(paused&1 ? 0 : dt, t, cam.x, cam.y, window.w*renderZoom*.125, window.h*renderZoom*.125);
 	if(pointerLocked){
 		cam -= mouse.xy*(renderZoom*.03);
-		Uint8 controls = keys[SDL_SCANCODE_W] | keys[SDL_SCANCODE_S]<<1 | keys[SDL_SCANCODE_A]<<2 | keys[SDL_SCANCODE_D]<<3 | keys[SDL_SCANCODE_SPACE]<<4 | keys[SDL_SCANCODE_LSHIFT]<<5 | keys[SDL_SCANCODE_LCTRL]<<5;
+		Uint8 controls = keys[SDL_SCANCODE_W] | keys[SDL_SCANCODE_S]<<1 | keys[SDL_SCANCODE_A]<<2 | keys[SDL_SCANCODE_D]<<3 | keys[SDL_SCANCODE_EQUALS]<<4 | keys[SDL_SCANCODE_MINUS]<<5;
+		if(keys[SDL_SCANCODE_SPACE]){
+			if(!(paused&2)) paused ^= 3;
+		}else paused &= -3;
 		if(controls){
 			f32 mv = renderZoom*dt;
 			if(controls&1) cam.y += mv;
@@ -87,10 +106,13 @@ inline void frame(){
 	physics::UpdateResultHandle draw = sim.result();
 	if(draw){
 		cout << draw->build_time << endl;
-		f32 difft = t - draw->t;
-		diffta += (difft-diffta)*dt*.2;
-		difft -= diffta;
-		glUniform1f(difftUni, difft);
+		if(!(paused&1)){
+			f32 difft = t - draw->t;
+			diffta += (difft-diffta)*dt*.2;
+			difft -= diffta;
+			glUniform1f(difftUni, difft);
+		}else draw->t += dt, glUniform1f(difftUni, 0);
+		glUniform1f(tUni, fmod(t,86400));
 		glUniform2f(xyUni, cam.x - draw->cam_x, cam.y - draw->cam_y);
 		for(int i = draw->draw_count; i;){
 			vector<physics::Sprite>& buf = draw->draw_data[--i];

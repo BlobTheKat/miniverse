@@ -225,7 +225,7 @@ struct QNStack{
 		f64 x = n->x, y = n->y;
 		if(!isfinite(x)) x = n->x = n->dx = dx = 0;
 		if(!isfinite(y)) y = n->y = n->dy = dy = 0;
-		f32 r = n->radius, xd1 = n->x - cam_x, yd1 = n->y - cam_y;
+		f32 r = n->radius*2., xd1 = n->x - cam_x, yd1 = n->y - cam_y;
 		if(abs(xd1)-abs(dx)-r < cam_hw && abs(yd1)-abs(dy)-r < cam_hh) drawBuf.emplace_back(vec2(xd1, yd1), vec2(n->dx, n->dy), r, bvec4(255));
 		find:
 		f64 xm = d->xm, ym = d->ym;

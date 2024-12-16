@@ -122,6 +122,25 @@ void finish(QNode* self, QNodeAggregate* agg){
 	}
 }
 
+void finish2(QNode* self){
+	if(!signbit(self->err_radius)){
+		Node** n = self->lchain;
+		if(!n) return;
+		Node** end = (Node**)(*n++);
+		QNodeAggregate agg2;
+		while(n < end){
+			Node* n1 = *n++;
+			finish(n1, agg2);
+		}
+	}else{
+		char* a = self->qchain;
+		finish2((QNode*) a);
+		finish2((QNode*)(a+=prev_qnode_size));
+		finish2((QNode*)(a+=prev_qnode_size));
+		finish2((QNode*)(a+=prev_qnode_size));
+	}
+}
+
 inline void updateq(usize agg, QNode* self, Node* other){
 	f32 r0 = abs(self->err_radius);
 	f32 xd = other->x - self->x, yd = other->y - self->y;

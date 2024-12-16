@@ -14,6 +14,11 @@ if [ ! -d .bin ]; then
 	mv SDL/build/*.a .bin2/lib
 	rm -rf SDL
 
+	git clone https://github.com/richgel999/stb
+	mkdir .bin2/include/stb
+	mv stb/*.h .bin2/include/stb
+	rm -rf stb
+
 	mv .bin2 .bin
 fi
 

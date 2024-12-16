@@ -18,6 +18,7 @@ struct Node{
 	static const u8 PINNED = 1, SELECTED = 2;
 	union{
 		Node* next;
+		struct ObjectVisual* visual;
 	};
 	f64 x, y;
 	f32 dx, dy;

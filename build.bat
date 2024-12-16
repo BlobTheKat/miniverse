@@ -41,8 +41,13 @@ if not exist ".bin\" (
 	move SDL\include .bin2\include\SDL2 >nul
 	move SDL\build\Release .bin2\lib >nul
 	rmdir /s /q SDL
-	echo id ICON icon.ico> .bin2\icon.rc
 
+	call git clone https://github.com/richgel999/stb
+	mkdir .bin2/include/stb 2>nul
+	move stb/*.h .bin2/include/stb >nul
+	rmdir /s /q stb
+
+	echo id ICON icon.ico> .bin2\icon.rc
 	move .bin2 .bin >nul
 )
 

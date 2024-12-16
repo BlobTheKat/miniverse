@@ -199,7 +199,7 @@ void work(SimData& dat, int a){
 			st_base = (char*) realloc(st_base, right>>=1);
 		else if(right < sizeof(void*)<<6)
 			st_base = (char*) realloc(st_base, right = sizeof(void*)<<6);
-		for(;;){
+		if(dt) for(;;){
 			usize task = dat.task_number++;
 			if(task >= dat.tasks.size()) break;
 			QNode* qn = dat.tasks[task];
@@ -214,6 +214,10 @@ void work(SimData& dat, int a){
 			if(((QNode*)(r2+=q5))->chain) *l1++ = (QNode*) r2;
 			updatev(agg, qn, lst, lst + (l1-list)*sizeof(QNode*));
 			st_pop(attr_block_size+4*sizeof(QNode*));
+		} else for(;;){
+			usize task = dat.task_number++;
+			if(task >= dat.tasks.size()) break;
+			finish2(dat.tasks[task]);
 		}
 
 		if(--dat.waiting){ swap(params->res->draw_data[a>>1], st.drawBuf); st.finish(); dat.stage2.wait(); }

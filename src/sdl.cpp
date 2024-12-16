@@ -6,10 +6,20 @@
 
 #ifndef __INTELLISENSE__
 #define asset(a) ([]{extern char _binary_assets_ ## a ## _start __asm__("_binary_assets_" #a "_start"), _binary_assets_ ## a ## _end __asm__("_binary_assets_" #a "_end");return buffer{&_binary_assets_ ## a ## _start, (size_t)(&_binary_assets_ ## a ## _end-&_binary_assets_ ## a ## _start)};}())
+#define asset_start(a) ([]{extern char _binary_assets_ ## a ## _start __asm__("_binary_assets_" #a "_start"), _binary_assets_ ## a ## _end __asm__("_binary_assets_" #a "_end");return &_binary_assets_ ## a ## _start;}())
+#define asset_end(a) ([]{extern char _binary_assets_ ## a ## _end __asm__("_binary_assets_" #a "_end");return &_binary_assets_ ## a ## _end;}())
+#define asset_size(a) ([]{extern char _binary_assets_ ## a ## _start __asm__("_binary_assets_" #a "_start"), _binary_assets_ ## a ## _end __asm__("_binary_assets_" #a "_end");return (size_t)(&_binary_assets_ ## a ## _end-&_binary_assets_ ## a ## _start);}())
 #else
 #define asset(a) buffer{0,0}
+#define asset_start(a) 0
+#define asset_end(a) 0
+#define asset_size(a) 0
 #endif
-typedef struct{char* data; size_t size;} buffer;
+struct buffer{
+	char* data; size_t size;
+	operator void*(){return data;}
+	operator size_t(){return size;}
+};
 
 GLuint makePipeline(buffer vert, buffer frag){
 	GLuint p = glCreateProgram();
