@@ -9,6 +9,7 @@ namespace physics{
 
 constexpr int BLOCK_SIZE = 4, BLOCK_BYTES = (BLOCK_SIZE<<16) - sizeof(char*);
 
+
 thread_local char *p_root = 0, *p_old_root = 0;
 thread_local char *block = (char*) &p_root, **block_end = &p_root;
 void* salloc(int sz){
@@ -99,7 +100,6 @@ struct alignas(hardware_destructive_interference_size) SimData{
 };
 
 thread_local SimData* dat;
-
 struct QNode{
 	constexpr static int LEAF_CAPACITY = 16;
 	constexpr static int DEEP_BIAS = LEAF_CAPACITY+1;
@@ -192,13 +192,13 @@ struct QNode{
 			props[i] = f;
 		}
 		a1 = a; f64 dcx = ((QNode*)a1)->cmass_x-cx, dcy = ((QNode*)a1)->cmass_y-cy;
-		f32 e = fast_sqrt(dcx*dcx+dcy*dcy)*i_theta+abs(((QNode*)a1)->err_radius);
+		f32 e = ((QNode*)a1)->mass ? fast_sqrt(dcx*dcx+dcy*dcy)*i_theta+abs(((QNode*)a1)->err_radius) : 0;
 		dcx = ((QNode*)(a1+=qnode_size))->cmass_x-cx; dcy = ((QNode*)a1)->cmass_y-cy;
-		e = max(e, fast_sqrt(dcx*dcx+dcy*dcy)*i_theta+abs(((QNode*)a1)->err_radius));
+		if(((QNode*)a1)->mass) e = max(e, fast_sqrt(dcx*dcx+dcy*dcy)*i_theta+abs(((QNode*)a1)->err_radius));
 		dcx = ((QNode*)(a1+=qnode_size))->cmass_x-cx; dcy = ((QNode*)a1)->cmass_y-cy;
-		e = max(e, fast_sqrt(dcx*dcx+dcy*dcy)*i_theta+abs(((QNode*)a1)->err_radius));
+		if(((QNode*)a1)->mass) e = max(e, fast_sqrt(dcx*dcx+dcy*dcy)*i_theta+abs(((QNode*)a1)->err_radius));
 		dcx = ((QNode*)(a1+=qnode_size))->cmass_x-cx; dcy = ((QNode*)a1)->cmass_y-cy;
-		e = max(e, fast_sqrt(dcx*dcx+dcy*dcy)*i_theta+abs(((QNode*)a1)->err_radius));
+		if(((QNode*)a1)->mass) e = max(e, fast_sqrt(dcx*dcx+dcy*dcy)*i_theta+abs(((QNode*)a1)->err_radius));
 		err_radius = -e;
 	}
 };
@@ -225,8 +225,9 @@ struct QNStack{
 		f64 x = n->x, y = n->y;
 		if(!isfinite(x)) x = n->x = n->dx = dx = 0;
 		if(!isfinite(y)) y = n->y = n->dy = dy = 0;
-		f32 r = n->radius*2., xd1 = n->x - cam_x, yd1 = n->y - cam_y;
-		if(abs(xd1)-abs(dx)-r < cam_hw && abs(yd1)-abs(dy)-r < cam_hh) drawBuf.emplace_back(vec2(xd1, yd1), vec2(n->dx, n->dy), r, bvec4(255));
+		u32 s = n->style.y&15;
+		f32 r = n->radius*f32((4|s&3)<<(s>>2))*.25, xd1 = n->x - cam_x, yd1 = n->y - cam_y;
+		if(abs(xd1)-abs(dx)-r < cam_hw && abs(yd1)-abs(dy)-r < cam_hh) drawBuf.emplace_back(vec2(xd1, yd1), vec2(n->dx, n->dy), r, n->style);
 		find:
 		f64 xm = d->xm, ym = d->ym;
 		f64 xd = x-xm, yd = y-ym;
@@ -352,7 +353,11 @@ struct QNStack{
 
 thread_local QNStack* tree;
 
-Node* Node::copy(){ return new (salloc(node_size)) Node(*this); }
-Node* Node::create(){return new (salloc(node_size)) Node();}
+inline Node* Node::copy(){
+	Node* n = new (salloc(node_size)) Node(*this);
+	for(int i=1;i<prop_count;i++) n->props[i] = this->props[i];
+	return n;
+}
+inline Node* Node::create(){ return new (salloc(node_size)) Node(); }
 
 }

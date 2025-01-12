@@ -98,7 +98,7 @@ int render(void* a){
 	printf("Loaded OpenGL %s\n", glGetString(GL_VERSION));
 	#endif
 	if(SDL_GL_SetSwapInterval(-1)) SDL_GL_SetSwapInterval(1);
-	init();
+	init(); 
 	uint64_t start = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 	while(run){
 		double ot=t;

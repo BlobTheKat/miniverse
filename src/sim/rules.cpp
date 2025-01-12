@@ -9,6 +9,7 @@ namespace physics{
 // (0,-r) is away
 // (r,0) is an anticlockwise orbit
 // (-r,0) is a clockwise orbit
+// The distributor is always mass
 
 struct _AttractionRule{
 	u32 prop, activator, agg_id;

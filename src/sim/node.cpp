@@ -16,21 +16,19 @@ inline f32 fast_sqrt(f32 x){
 
 struct Node{
 	static const u8 PINNED = 1, SELECTED = 2;
-	union{
-		Node* next;
-		struct ObjectVisual* visual;
-	};
+	Node* next;
 	f64 x, y;
 	f32 dx, dy;
 	f32 radius;
+	uvec2 style;
 	u8 flags; u8 bookmark_id;
 	inline f32 rad_cap(f32 sq_dst){return max(sq_dst,radius*radius);}
 	union{
 		f32 mass;
 		struct{ f32 props[]; };
 	};
-	Node* copy();
-	static Node* create();
+	inline Node* copy();
+	inline static Node* create();
 	Node(){}
 	Node(f64 x, f64 y, f32 rad, f32 mass, f32 dx = 0, f32 dy = 0) : x(x), y(y), radius(rad), mass(mass), dx(dx), dy(dy){}
 };

@@ -102,6 +102,8 @@ typedef ssize_t isize;
 typedef uintptr_t uptr;
 typedef intptr_t iptr;
 typedef char byte;
+
+#define ci constexpr inline
 template<typename F, size_t L> requires (L > 0) struct vec;
 template<typename F, size_t L>
 struct _vec_c_types{
@@ -118,7 +120,7 @@ struct _vec_c_types{
 		}; };
 	};
 	template<typename... Ts>
-	inline _vec_c_types(F x, Ts... a) : x(x), __rest(a...){}
+	ci _vec_c_types(F x, Ts... a) : x(x), __rest(a...){}
 };
 template<typename F> struct _vec_c_types<F, 4>{
 	union{
@@ -133,7 +135,7 @@ template<typename F> struct _vec_c_types<F, 4>{
 		}; };
 	};
 	template<typename... Ts>
-	inline _vec_c_types(F x, Ts... a) : x(x), yzw(a...){}
+	ci _vec_c_types(F x, Ts... a) : x(x), yzw(a...){}
 };
 template<typename F> struct _vec_c_types<F, 3>{
 	union{
@@ -145,7 +147,7 @@ template<typename F> struct _vec_c_types<F, 3>{
 		}; };
 	};
 	template<typename... Ts>
-	inline _vec_c_types(F x, Ts... a) : x(x), yz(a...){}
+	ci _vec_c_types(F x, Ts... a) : x(x), yz(a...){}
 };
 template<typename F> struct _vec_c_types<F, 2>{
 	union{
@@ -153,7 +155,7 @@ template<typename F> struct _vec_c_types<F, 2>{
 		struct{ F x; union{ F y; F __rest; }; };
 	};
 	template<typename... Ts>
-	inline _vec_c_types(F x, Ts... a) : x(x), y(a...){}
+	ci _vec_c_types(F x, Ts... a) : x(x), y(a...){}
 };
 
 double operator""_deg(long double d){return d*0.017453292519943295;}
@@ -164,18 +166,18 @@ template<typename F, typename... X>
 F hypot(X... x){ return sqrt((0 + ... + (x * x))); }
 
 template<typename F, size_t R, size_t C> struct _mat;
-#define ci constexpr inline
+
 template<typename F, size_t L> requires (L > 0)
 struct vec: _vec_c_types<F,L>{
 	static const size_t size = L;
 	using type = F;
 	template<typename... Ts>
-	inline vec(F a, Ts... b) : _vec_c_types<F,L>(a, b...){}
+	ci vec(F a, Ts... b) : _vec_c_types<F,L>(a, b...){}
 	template<typename X, typename... Ts> requires (X::size > 1) && (X::type)
-	inline vec(X& a, Ts... b) : _vec_c_types<F,L>(a.x, a.__rest, b...){}
-	inline vec(F a) : _vec_c_types<F,L>(a, a){}
-	inline vec() : _vec_c_types<F,L>(0){}
-	inline F& operator[](size_t i){return this->data[i];}
+	ci vec(X& a, Ts... b) : _vec_c_types<F,L>(a.x, a.__rest, b...){}
+	ci vec(F a) : _vec_c_types<F,L>(a, a){}
+	ci vec() : _vec_c_types<F,L>(0){}
+	ci F& operator[](size_t i){return this->data[i];}
 	#define OP(o, o2, d) ci vec<F,L> operator o o2(d) const{return {o this->x o2, o this->__rest o2};}
 	OP(+,,) OP(-,,) OP(++,,) OP(--,,) OP(,++,int) OP(,--,int)
 	#undef OP

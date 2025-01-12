@@ -1,5 +1,6 @@
 #include "update.cpp"
 #include <iostream>
+#include <fstream>
 
 namespace physics{
 
@@ -64,9 +65,10 @@ struct Simulation{
 		p->i_theta = 1/theta;
 	}
 	template<typename... T>
-	inline void add_node(T... a){
+	inline Node& add_node(T... a){
 		Node* n = new Node(a...);
 		n->next = toAdd; toAdd = n;
+		return *n;
 	}
 	void add_prop(sstring&& name){
 		prop_names.emplace_back(name);
@@ -128,10 +130,10 @@ void add(QNode* qn, usize size_limit){
 constexpr usize SMALLEST_MAX_TASK_SIZE = 100000;
 
 void print_tree(QNode* a, int ind){
-	if(ind > 2) return;
 	string i = string(ind<<1, ' ');
 	if(!a) return void(cout << i << "null\n");
 	cout << i << "\x1b[32mQNode(" << a->cmass_x << ", " << a->cmass_y << ") ~ " << abs(a->err_radius) << ", mass=" << a->mass << "\x1b[m\n";
+	if(ind > 2) return;
 	if(signbit(a->err_radius)){
 		char* x = a->qchain;
 		print_tree((QNode*)x, ++ind);
@@ -151,14 +153,50 @@ void print_tree(QNode* a, int ind){
 	}
 }
 
+void tree_to_json(QNode* a, stringstream& res){
+	if(!a) return void(res << "null");
+	res << "{\"x\":" << a->x;
+	res << ",\"y\":" << a->y;
+	res << ",\"mass\":" << a->mass;
+	res << ",\"err\":" << abs(a->err_radius);
+	if(signbit(a->err_radius)){
+		char* x = a->qchain;
+		res << ",\"bl\":";
+		tree_to_json((QNode*)x, res);
+		res << ",\"br\":";
+		tree_to_json((QNode*)(x+=prev_qnode_size), res);
+		res << ",\"tl\":";
+		tree_to_json((QNode*)(x+=prev_qnode_size), res);
+		res << ",\"tr\":";
+		tree_to_json((QNode*)(x+=prev_qnode_size), res);
+		res << '}';
+	}else{
+		res << ",\"nodes\":[";
+		Node** n = a->lchain;
+		if(n){
+			Node** end = (Node**)(*n++);
+			bool i = 0;
+			while(n < end){
+				if(i) res << ",";
+				else i=true;
+				Node* n1 = *n++;
+				res << "{\"x\":" << n1->x;
+				res << ",\"y\":" << n1->y;
+				res << ",\"mass\":" << n1->mass;
+				res << "}";
+			}
+		}
+		res << "]}";
+	}
+}
+
 void work(SimData& dat, int a){
 	physics::dat = &dat;
 	QNStack st; tree = &st;
 	UpdateParams* params = dat.params; a |= 1;
 	if(!(a>>1)) params->avail.wait();
 	else dat.stage1.wait();
-	while(1){
-		if(!dat.running.test()){ if(!(a>>1)) dat.stage1.unlock_all(); break; }
+	while(dat.running.test()){
 		prev_node_size = node_size; prev_qnode_size = qnode_size;
 		prev_prop_count = prop_count;
 		if(params->changed){
@@ -171,8 +209,6 @@ void work(SimData& dat, int a){
 			prop_count = params->prop_count; attr_count = params->attr_count;
 			attr_block_size = adv_aligned<alignof(QNode*)>(attr_count * sizeof(QNodeAggregate));
 		}
-		st.cam_x = params->cam_x; st.cam_y = params->cam_y;
-		st.cam_hw = params->cam_hw; st.cam_hh = params->cam_hh;
 		if(!(a>>1)){
 			dat.start = chrono::high_resolution_clock::now();
 			dat.waiting = dat.thr_count;
@@ -180,19 +216,29 @@ void work(SimData& dat, int a){
 			dat.old_roots = dat.roots.load(relaxed);
 #ifdef PRINT_TREE
 			char* x = dat.old_roots;
-			print_tree((QNode*)x, 0);
-			print_tree((QNode*)(x+=prev_qnode_size*5), 0);
-			print_tree((QNode*)(x+=prev_qnode_size*5), 0);
-			print_tree((QNode*)(x+=prev_qnode_size*5), 0);
-			cout << "\n\x1b[31m================\n\n\x1b[m";
+			stringstream str; str << "[";
+			tree_to_json((QNode*)x, str);
+			str << ',';
+			tree_to_json((QNode*)(x+=prev_qnode_size*5), str);
+			str << ',';
+			tree_to_json((QNode*)(x+=prev_qnode_size*5), str);
+			str << ',';
+			tree_to_json((QNode*)(x+=prev_qnode_size*5), str);
+			str << ']';
+			ofstream f("qtree.json", fstream::trunc);
+			f << str.str();
+			f.close();
 #endif
 			char* a = (char*) salloc(qnode_size<<4);
 			f64 sz = max(1., dat.prev_size*.5);
 			for(char* b = a+(qnode_size<<4); b > a;) (new (b -= qnode_size) QNode())->size = sz;
 			dat.roots.store(a, relaxed);
 			dat.stage2.lock();
+			if(!dat.running.test()) break;
 			dat.stage1.unlock_all();
 		}
+		st.cam_x = params->cam_x; st.cam_y = params->cam_y;
+		st.cam_hw = params->cam_hw; st.cam_hh = params->cam_hh;
 		char* r = dat.old_roots; usize q5 = prev_qnode_size*5; f64 sz = dat.prev_size;
 		dt = params->dt;
 		if(right > sizeof(void*)<<8)
@@ -281,6 +327,7 @@ void work(SimData& dat, int a){
 			dat.stage1.wait();
 		}
 	}
+	if(!(a>>1)) dat.stage1.unlock_all();
 	free(st_base);
 	free_all();
 }

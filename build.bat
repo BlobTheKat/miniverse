@@ -88,11 +88,11 @@ if "!R!" neq "" goto :loop
 set OPTS= -gcolumn-info /Od /Ob0 /EHsc /GR -gcodeview /Z7 -fsanitize=undefined -fsanitize=address
 set LOPTS= /subsystem:console /DEBUG /DEBUG:FULL
 if "%ARG_RELEASE%" neq "" (
-	set OPTS= /O2 /GR- /Gy
+	set OPTS= /GR- /Gy /O2 -Ofast
 	set LOPTS= /release /opt:ref /opt:icf /subsystem:windows /dynamicbase /nxcompat /highentropyva
 )
 if "%ARG_PROFILE%" neq "" (
-	set OPTS= -gcolumn-info /EHsc /GR -gcodeview /Z7 /O2
+	set OPTS= -gcolumn-info /EHsc /GR -gcodeview /Z7 /O2 -Ofast
 	set LOPTS= /release /subsystem:console
 )
 
