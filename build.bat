@@ -42,7 +42,7 @@ if not exist ".bin\" (
 	move SDL\build\Release .bin2\lib >nul
 	rmdir /s /q SDL
 
-	call git clone https://github.com/richgel999/stb
+	call git clone https://github.com/nothings/stb
 	mkdir .bin2/include/stb 2>nul
 	move stb/*.h .bin2/include/stb >nul
 	rmdir /s /q stb
