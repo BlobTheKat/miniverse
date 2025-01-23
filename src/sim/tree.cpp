@@ -9,21 +9,21 @@ namespace physics{
 
 constexpr int BLOCK_SIZE = 4, BLOCK_BYTES = (BLOCK_SIZE<<16) - sizeof(char*);
 
-
+thread_local usize mem = 0;
 thread_local char *p_root = 0, *p_old_root = 0;
 thread_local char *block = (char*) &p_root, **block_end = &p_root;
 void* salloc(int sz){
 	char* a = block;
 	if((block = a + sz) <= (char*)block_end) return a;
 	a = *block_end;
-	if(!a) a = *block_end = (char*) page_alloc(BLOCK_SIZE);
+	if(!a) a = *block_end = (char*) page_alloc(BLOCK_SIZE), mem += BLOCK_SIZE<<16;
 	block = a + sz; block_end = (char**) (a + BLOCK_BYTES);
 	return a;
 }
 void free_swap(){
 	char* a = *block_end; *block_end = 0;
 	while(a){
-		char* b = *(char**)(a+BLOCK_BYTES); page_free(a); a = b;
+		char* b = *(char**)(a+BLOCK_BYTES); page_free(a), mem -= BLOCK_SIZE<<16; a = b;
 	}
 	a = p_old_root; p_old_root = p_root; p_root = a;
 	block = (char*) (block_end = &p_root);
@@ -39,6 +39,7 @@ void free_all(){
 		char* b = *(char**)(a+BLOCK_BYTES); page_free(a); a = b;
 	}
 	block = (char*) &p_root; block_end = &p_root;
+	mem = 0;
 }
 
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
@@ -74,6 +75,7 @@ struct UpdateResult{
 	atomic_int ref_count = 1; int draw_count;
 	usize node_count;
 	f64 cam_x, cam_y, t, build_time;
+	usize mem;
 	vector<Sprite> draw_data[0];
 	UpdateResult(int dc) : draw_count(dc){
 		while(dc) new (&draw_data[--dc]) vector<Sprite>();
@@ -94,6 +96,7 @@ struct alignas(hardware_destructive_interference_size) SimData{
 	atomic<int> waiting;
 	UpdateParams params[2];
 	atomic<usize> node_count;
+	atomic<usize> mem;
 	UpdateResult* latest = 0;
 	f64 prev_size = 128;
 	chrono::time_point<chrono::high_resolution_clock> start;

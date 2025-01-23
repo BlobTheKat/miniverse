@@ -1,13 +1,10 @@
-#include "sdl.cpp"
-#include "scene.h"
 #include "sim/sim.cpp"
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
+#include "ui.cpp"
 
 GLint whUni, whUniStar, xyUni, difftUni, noiseUni, tUni;
 GLuint objShader, starShader;
-
-GLuint buf, va;
 
 physics::Simulation sim;
 
@@ -27,24 +24,38 @@ inline void init(){
 	starShader = makePipeline(asset(fullscreen_vert), asset(star_frag));
 	whUniStar = glGetUniformLocation(starShader, "wh");
 
+	GLfloat maxAniso = -1;
+	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAniso);
+
 	glUseProgram(objShader);
 	glUniform1i(noiseUni, 0);
 	GLuint texs[2];
 	glGenTextures(2, texs);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texs[0]);
+	stbi_set_flip_vertically_on_load_thread(1);
 	vector<u8> data; int w, h, ch;
-	stbi_uc* img = stbi_load_from_memory((stbi_uc*) asset_start(noise_png), asset_size(noise_png), &w, &h, &ch, 4);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, img);
+	stbi_uc* img = stbi_load_from_memory((stbi_uc*) asset_start(noise_png), asset_size(noise_png), &w, &h, &ch, 1);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, img);
 	stbi_image_free(img);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+	if(maxAniso >= 0)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAniso);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, texs[1]);
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, 1, 1, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, 0);
+	img = stbi_load_from_memory((stbi_uc*) asset_start(ubuntu_png), asset_size(ubuntu_png), &w, &h, &ch, 3);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, img);
+	stbi_image_free(img);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	uiShader = makePipeline(asset(basic_vert), asset(font_frag));
+	glUseProgram(uiShader);
+	glUniform2f(glGetUniformLocation(uiShader, "distRange"), w*ubuntu::dist_range, h*ubuntu::dist_range);
+	glUniform1i(glGetUniformLocation(uiShader, "atlas"), 1);
+
 	glGenBuffers(1, &buf);
-	glGenVertexArrays(1, &va);
-	glBindVertexArray(va);
+	glGenVertexArrays(2, va);
+	glBindVertexArray(va[0]);
 	glBindBuffer(GL_ARRAY_BUFFER, buf);
 	glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2);
 	glVertexAttribPointer(0, 4, GL_FLOAT, false, sizeof(physics::Sprite), 0);
@@ -53,6 +64,10 @@ inline void init(){
 	glVertexAttribDivisor(0, 1);
 	glVertexAttribDivisor(1, 1);
 	glVertexAttribDivisor(2, 1);
+	glBindVertexArray(va[1]);
+	glEnableVertexAttribArray(0); glEnableVertexAttribArray(1);
+	glVertexAttribPointer(0, 4, GL_FLOAT, false, sizeof(f32[8]), 0);
+	glVertexAttribPointer(1, 4, GL_FLOAT, false, sizeof(f32[8]), (void*)sizeof(f32[4]));
 	glBindVertexArray(0);
 	sim.add_attraction_rule({
 		.prop = 0,
@@ -90,7 +105,7 @@ inline void init(){
 		.atm_col = style::DARKEN_25, .atm_size = 2_f4,
 		.gradient = style::SMALL_WHITE
 	};
-	for(int i=200; i < 1'000'000; i++){
+	for(int i=200; i < 10'000'000; i++){
 		f32 th = f32(rand()) * (PI2/RAND_MAX);
 		f32 ax = sin(th), ay = cos(th);
 		f32 dx = ay*20, dy = ax*-20;
@@ -115,7 +130,9 @@ vec2 stars_pos;
 u8 paused = 0;
 f32 diffta = 0;
 f32 moved = 0;
+f32 spf_avg = .015;
 inline void frame(){
+	spf_avg += (dt-spf_avg)*min(4.*dt,1.);
 	if(mouse.w) tzoom += mouse.w*-.3;
 	f32 a = pow(.001, dt);
 	zoom = tzoom*(1-a) + zoom*a;
@@ -140,18 +157,18 @@ inline void frame(){
 			if(controls&32) tzoom += dt*2;
 		}
 	}
-	a = 10./(renderZoom*window.w*window.h);
-	f32 w = a*window.h, h = a*window.w;
+	f32 scale = 10./(renderZoom*window.w*window.h);
+	f32 w = scale*window.h, h = scale*window.w;
+	scale = 20./(window.w*window.h);
 	glClearColor(0,0,0,0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glUseProgram(objShader);
 	glUniform2f(whUni, w, h);
-	glBindBuffer(GL_ARRAY_BUFFER, buf);
-	glBindVertexArray(va);
+	//glBindBuffer(GL_ARRAY_BUFFER, buf);
+	glBindVertexArray(va[0]);
 	glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	physics::UpdateResultHandle draw = sim.result();
 	if(draw){
-		cout << draw->build_time << endl;
 		if(!(paused&1)){
 			f32 difft = t - draw->t;
 			diffta += (difft-diffta)*dt*.2;
@@ -172,4 +189,24 @@ inline void frame(){
 	glUseProgram(starShader);
 	glUniform2f(whUniStar, window.w*.005, window.h*.005);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	UIMesh ui;
+	ui.scale(scale*window.h, scale*window.w);
+	ui.translate(0.2, 0.2);
+	{
+		UIMesh ui2 = ui;
+		if(draw){
+			f32 time = draw->build_time;
+			ui2.add_text(format("{:.2f}ms", time*1000), time < .015 ? vec4(0,.8,0,1) : time < .1 ? vec4(.8,.5,0,1) : vec4(.8,0,0,1));
+			ui2.add_text(" per tick / ");
+		}else ui2.add_text("Loading... / ");
+		i32 fps = round(1./spf_avg);
+		ui2.add_text(format("{}", fps), fps >= 50 ? vec4(0,.8,0,1) : fps >= 15 ? vec4(.8,.5,0,1) : vec4(.8,0,0,1));
+		ui2.add_text(" FPS");
+		ui2.add_text(format(" / T: {}, M: {:.2f}MB", sim.thread_count(), draw ? f32(draw->mem)*.0000009537 : 0), vec4(.3));
+	}
+	ui.translateY(1.2);
+	ui.add_text("Miniverse ");
+	ui.add_text("1.0", vec4(.4,.1,.9,1), vec4(.2,.2,.2,0));
+	ui.draw();
 }

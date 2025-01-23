@@ -46,15 +46,22 @@
 using namespace std;
 using enum memory_order;
 
-// abs() to work around https://github.com/llvm/llvm-project/issues/117557
-inline float q_abs(float x){
-	__asm("and %2, %0" : "=r"(x) : "r"(x), "i"(0x7fffffff));
-	return x;
-}
-inline double q_abs(double x){
-	__asm("and %2, %0" : "=r"(x) : "r"(x), "i"(0x7fffffffffffffff));
-	return x;
-}
+#ifndef __INTELLISENSE__
+#define asset(a) ([]{extern char _binary_assets_ ## a ## _start __asm__("_binary_assets_" #a "_start"), _binary_assets_ ## a ## _end __asm__("_binary_assets_" #a "_end");return buffer{&_binary_assets_ ## a ## _start, (size_t)(&_binary_assets_ ## a ## _end-&_binary_assets_ ## a ## _start)};}())
+#define asset_start(a) ([]{extern char _binary_assets_ ## a ## _start __asm__("_binary_assets_" #a "_start"), _binary_assets_ ## a ## _end __asm__("_binary_assets_" #a "_end");return &_binary_assets_ ## a ## _start;}())
+#define asset_end(a) ([]{extern char _binary_assets_ ## a ## _end __asm__("_binary_assets_" #a "_end");return &_binary_assets_ ## a ## _end;}())
+#define asset_size(a) ([]{extern char _binary_assets_ ## a ## _start __asm__("_binary_assets_" #a "_start"), _binary_assets_ ## a ## _end __asm__("_binary_assets_" #a "_end");return (size_t)(&_binary_assets_ ## a ## _end-&_binary_assets_ ## a ## _start);}())
+#else
+#define asset(a) buffer{0,0}
+#define asset_start(a) 0
+#define asset_end(a) 0
+#define asset_size(a) 0
+#endif
+struct buffer{
+	char* data; size_t size;
+	operator void*(){return data;}
+	operator size_t(){return size;}
+};
 
 template<size_t align = 1>
 inline constexpr size_t adv_aligned(size_t x){ return (x + (align - 1)) / align * align; }
@@ -170,10 +177,10 @@ template<typename F, size_t R, size_t C> struct _mat;
 template<typename F, size_t L> requires (L > 0)
 struct vec: _vec_c_types<F,L>{
 	static const size_t size = L;
-	using type = F;
+	using component_type = F;
 	template<typename... Ts>
 	ci vec(F a, Ts... b) : _vec_c_types<F,L>(a, b...){}
-	template<typename X, typename... Ts> requires (X::size > 1) && (X::type)
+	template<typename X, typename... Ts> requires (X::size > 1)
 	ci vec(X& a, Ts... b) : _vec_c_types<F,L>(a.x, a.__rest, b...){}
 	ci vec(F a) : _vec_c_types<F,L>(a, a){}
 	ci vec() : _vec_c_types<F,L>(0){}
@@ -220,15 +227,16 @@ struct vec: _vec_c_types<F,L>{
 		return *this;
 	}
 };
+
 template<typename F>
 struct vec<F,1>{
 	static const size_t size = 1;
-	using type = F;
+	using component_type = F;
 	union{ F data[1]; F x; };
 	inline vec(F a = 0) : x(a){}
 	template<typename... Ts>
 	inline vec(F a, Ts...) : x(a){}
-	template<typename X, typename... Ts> requires (X::size) && (X::type)
+	template<typename X, typename... Ts> requires (X::size)
 	inline vec(X& a, Ts...) : x(a.x){}
 	inline vec() : x(0){}
 	inline F& operator[](size_t i){return this->x;}
@@ -260,7 +268,6 @@ struct vec<F,1>{
 		return *this;
 	}
 };
-#undef ci
 
 using vec2 = vec<f32,2>; using dvec2 = vec<f64,2>; using ivec2 = vec<i32,2>; using uvec2 = vec<u32,2>; using bvec2 = vec<u8,2>;
 using vec3 = vec<f32,3>; using dvec3 = vec<f64,3>; using ivec3 = vec<i32,3>; using uvec3 = vec<u32,3>; using bvec3 = vec<u8,3>;
@@ -311,7 +318,7 @@ struct _mat{
 		}
 		return det;
 	}
-	vec<F,H> operator*(vec<F,W>& v){
+	ci vec<F,H> operator*(vec<F,W> v){
 		vec<F,H> a;
 		F* i = data, *end = i + W*H;
 		F* vp = &v[0];
@@ -336,6 +343,7 @@ struct _mat{
 		}
 		return *this;
 	}
+	inline _mat<F,W,H>& operator*=(_mat<F,W,W>&& v){ return operator*=(v); }
 	template<size_t W1>
 	_mat<F,W,H>& operator*=(_mat<F,W,W1>& v) requires (W1 < W){
 		F m[size]; memcpy(m, data, size*sizeof(F));
@@ -358,6 +366,8 @@ struct _mat{
 		}
 		return *this;
 	}
+	template<size_t W1>
+	inline _mat<F,W,H>& operator*=(_mat<F,W,W1>&& v){ return operator*=(v); }
 };
 
 template<typename F, size_t W, size_t H>
@@ -522,7 +532,7 @@ struct mat<F, 4, L>: _mat<F, 4, L>{
 	inline void skew2(vec<F,2> yz, vec<F,2> xz, vec<F,2> xy){ skew(xz.x, xy.x, yz.x, xy.y, yz.y, xz.y); }
 
 	// Returns the point that would transform to p with the current matrix. Only available on 4x3 matrices
-	vec<F,3> invert(vec<F,3>& p) requires (L == 3){
+	vec<F,3> invert(vec<F,3> p) requires (L == 3){
 		F x = p.x - this->data[3*L], y = p.y - this->data[3*L+1], z = p.z - this->data[3*L+2];
 		F a11 = this->data[0], a21 = this->data[1], a31 = this->data[2];
 		F a12 = this->data[3], a22 = this->data[4], a32 = this->data[5];
@@ -658,7 +668,7 @@ struct mat<F, 3, L>: _mat<F, 3, L>{
 	void skewY(F xy){ for(size_t i = 0; i < L; i++){ this->data[i] += xy*this->data[i+L]; } }
 
 	// Returns the point that would transform to p with the current matrix. Only available on 3x2 matrices
-	vec<F,2> invert(vec<F,2>& p) requires (L == 2){
+	constexpr vec<F,2> invert(vec<F,2> p) requires (L == 2){
 		F a = this->data[0], b = this->data[1], c = this->data[2], d = this->data[3], det = a*d-b*c;
 		return {
 			(p.x*(d - c) + c*this->data[5] - d*this->data[4])/det,
@@ -667,16 +677,19 @@ struct mat<F, 3, L>: _mat<F, 3, L>{
 	}
 
 	// Reset to the identity matrix
-	void identity(){
+	ci void identity(){
 		memset(this->data, 0, sizeof(F)*3*L);
 		for(size_t i = 0; i < this->size; i += L+1) this->data[i] = 1;
 	}
 	// Reset to the identity matrix then perform translate(xy) and then scale(scale)
-	void reset(vec<F,2> xy = vec<F,2>(0), vec<F,2> scale = vec<F,2>(1)) requires (L > 1){
-		memset(this->data, 0, sizeof(F)*8);
+	ci void reset(vec<F,2> xy = vec<F,2>(0), vec<F,2> scale = vec<F,2>(1)) requires (L > 1){
+		memset(this->data, 0, sizeof(F)*L*3);
 		this->data[0] = scale.x; this->data[L+1] = scale.y;
 		this->data[2*L] = xy.x*scale.x; this->data[2*L+1] = xy.y*scale.y;
 	}
+
+	ci vec<F,L> transformPoint(vec<F,2> xy){ return this->operator*(vec<F,3>(xy,1)); }
+	ci vec<F,L> transformMetric(vec<F,2> xy){ return this->operator*(vec<F,3>(xy,0)); }
 };
 
 using mat4x4 = mat<f32, 4, 4>;
@@ -703,48 +716,48 @@ using mat2 = mat2x2; using dmat2 = dmat2x2;
 
 struct a_lock: atomic_flag{
 	a_lock() : atomic_flag ATOMIC_FLAG_INIT{}
-	inline a_lock(bool set) : atomic_flag ATOMIC_FLAG_INIT{if(set) test_and_set(relaxed);}
-	inline void lock(){ while(test_and_set(acq_rel)) atomic_flag::wait(true); }
-	inline void set(){ test_and_set(acq_rel); }
-	inline bool is_locked(){ return test(acquire); }
-	inline void wait(){ if(test(acquire)) atomic_flag::wait(true); }
-	inline bool try_lock(){ return !test_and_set(acq_rel); }
-	inline void unlock(){ clear(release); notify_one(); }
-	inline void unlock_all(){ clear(release); notify_all(); }
+	ci a_lock(bool set) : atomic_flag ATOMIC_FLAG_INIT{if(set) test_and_set(relaxed);}
+	ci void lock(){ while(test_and_set(acq_rel)) atomic_flag::wait(true); }
+	ci void set(){ test_and_set(acq_rel); }
+	ci bool is_locked(){ return test(acquire); }
+	ci void wait(){ if(test(acquire)) atomic_flag::wait(true); }
+	ci bool try_lock(){ return !test_and_set(acq_rel); }
+	ci void unlock(){ clear(release); notify_one(); }
+	ci void unlock_all(){ clear(release); notify_all(); }
 };
 
 struct s_lock: atomic_flag{
-	inline void lock(){ while(test_and_set(acq_rel)); }
-	inline void set(){ test_and_set(acq_rel); }
-	inline bool is_locked(){ return test(acquire); }
-	inline void wait(){ while(test(acquire)); }
-	inline bool try_lock(){ return !test_and_set(acq_rel); }
-	inline void unlock(){ clear(release); }
-	inline void unlock_all(){ clear(release); }
+	ci void lock(){ while(test_and_set(acq_rel)); }
+	ci void set(){ test_and_set(acq_rel); }
+	ci bool is_locked(){ return test(acquire); }
+	ci void wait(){ while(test(acquire)); }
+	ci bool try_lock(){ return !test_and_set(acq_rel); }
+	ci void unlock(){ clear(release); }
+	ci void unlock_all(){ clear(release); }
 };
 
 template<typename T> struct alignas(T) dummy{
 	char value[sizeof(T)];
-	inline dummy(){}
-	inline dummy(T& other){ new (value) T(other); }
-	inline dummy(T&& other){ new (value) T(other); }
-	inline dummy(dummy<T>& other){ memcpy(value, other.value, sizeof(T)); }
-	inline dummy(dummy<T>&& other){ memcpy(value, other.value, sizeof(T)); }
-	inline dummy<T>& operator=(dummy<T>& other){ memcpy(value, other.value, sizeof(T)); return *this; }
-	inline dummy<T>& operator=(dummy<T>&& other){ memcpy(value, other.value, sizeof(T)); return *this; }
+	ci dummy(){}
+	ci dummy(T& other){ new (value) T(other); }
+	ci dummy(T&& other){ new (value) T(other); }
+	ci dummy(dummy<T>& other){ memcpy(value, other.value, sizeof(T)); }
+	ci dummy(dummy<T>&& other){ memcpy(value, other.value, sizeof(T)); }
+	ci dummy<T>& operator=(dummy<T>& other){ memcpy(value, other.value, sizeof(T)); return *this; }
+	ci dummy<T>& operator=(dummy<T>&& other){ memcpy(value, other.value, sizeof(T)); return *this; }
 	
-	inline T& operator*(){ return *(T*)value; }
-	inline T* operator->(){ return (T*)value; }
-	inline operator T&(){return *(T*)value;}
-	inline operator T*(){return (T*)value;}
+	ci T& operator*(){ return *(T*)value; }
+	ci T* operator->(){ return (T*)value; }
+	ci operator T&(){return *(T*)value;}
+	ci operator T*(){return (T*)value;}
 
 	template<typename... X>
-	inline void construct(X... a){ new (value) T(a...); }
+	ci void construct(X... a){ new (value) T(a...); }
 	template<typename... X>
-	inline void replace(X... a){ ((T*)value)->~T(); new (value) T(a...); }
-	inline void destruct(){ ((T*)value)->~T(); }
-	inline T copy(){return *(T*)value;}
-	inline T&& move(){return move(*(T*)value);}
+	ci void replace(X... a){ ((T*)value)->~T(); new (value) T(a...); }
+	ci void destruct(){ ((T*)value)->~T(); }
+	ci T copy(){return *(T*)value;}
+	ci T&& move(){return move(*(T*)value);}
 };
 
 template<typename T>
@@ -752,3 +765,5 @@ inline void check_addr(T* a){
 	uptr b = uptr(a);
 	if(b < 65536 || b > 0xffffffffffff || (b%alignof(T)) != 0) abort();
 }
+
+#undef ci

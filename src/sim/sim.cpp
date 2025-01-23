@@ -1,5 +1,6 @@
 #include "update.cpp"
 #include <iostream>
+#include <sstream>
 #include <fstream>
 
 namespace physics{
@@ -233,6 +234,7 @@ void work(SimData& dat, int a){
 			f64 sz = max(1., dat.prev_size*.5);
 			for(char* b = a+(qnode_size<<4); b > a;) (new (b -= qnode_size) QNode())->size = sz;
 			dat.roots.store(a, relaxed);
+			dat.mem.store(0, relaxed);
 			dat.stage2.lock();
 			if(!dat.running.test()) break;
 			dat.stage1.unlock_all();
@@ -265,24 +267,27 @@ void work(SimData& dat, int a){
 			if(task >= dat.tasks.size()) break;
 			finish2(dat.tasks[task]);
 		}
-
-		if(--dat.waiting){ swap(params->res->draw_data[a>>1], st.drawBuf); st.finish(); dat.stage2.wait(); }
-		else{
-			dat.stage1.lock();
+		if(!(a>>1)){
 			Node* n = params->toAdd;
 			while(n){
 				st.add(new (salloc(node_size)) Node(*n));
 				Node* n2 = n->next; delete n; n = n2;
 			}
-			st.finish();
+		}
+		st.finish();
+		swap(params->res->draw_data[a>>1], st.drawBuf);
+		dat.mem.fetch_add(mem, relaxed);
+		if(--dat.waiting) dat.stage2.wait();
+		else{
+			dat.stage1.lock();
 			q5 = qnode_size*5;
 			UpdateResult* res = params->res;
-			swap(res->draw_data[a>>1], st.drawBuf);
 			dat.waiting = dat.thr_count;
 			dat.task_number = 0;
 			usize node_count = dat.node_count.load(relaxed);
 			res->node_count = node_count;
-			res->build_time = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now() - dat.start).count()*.001;
+			res->build_time = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now() - dat.start).count()*.000001;
+			res->mem = dat.mem.load(relaxed);
 			dat.resLock.lock();
 			UpdateResult* old = dat.latest;
 			dat.latest = res;
