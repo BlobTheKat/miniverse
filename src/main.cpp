@@ -105,7 +105,7 @@ inline void init(){
 		.atm_col = style::DARKEN_25, .atm_size = 2_f4,
 		.gradient = style::SMALL_WHITE
 	};
-	for(int i=200; i < 10'000'000; i++){
+	for(int i=200; i < 1'000'000; i++){
 		f32 th = f32(rand()) * (PI2/RAND_MAX);
 		f32 ax = sin(th), ay = cos(th);
 		f32 dx = ay*20, dy = ax*-20;
