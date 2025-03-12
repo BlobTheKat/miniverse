@@ -206,7 +206,7 @@ struct vec: _vec_c_types<F,L>{
 		ci vec<F,L>& operator o2(F b){this->x o2 b, this->__rest o2 b;return *this;}
 	OP(+, +=) OP(-, -=) OP(*, *=) OP(/, /=) OP(%, %=) OP(&, &=) OP(|, |=) OP(^, ^=) OP(<<, <<=) OP(>>, >>=)
 	#undef OP
-	template<size_t O> vec<F,O> operator*(_mat<F,O,L>& m){
+	template<size_t O> vec<F,O> operator*(const _mat<F,O,L>& m){
 		vec<F,O> a;
 		F* b = a, *i = m.data, *end = i + O*L;
 		for(; i < end; i += L){
@@ -216,7 +216,7 @@ struct vec: _vec_c_types<F,L>{
 		}
 		return a;
 	}
-	vec<F,L>& operator*=(_mat<F,L,L>& m){
+	vec<F,L>& operator*=(const _mat<F,L,L>& m){
 		vec<F,L> a = this;
 		F* b = data, *i = m.data, *end = i + L*L;
 		for(; i < end; i += L){
@@ -257,13 +257,13 @@ struct vec<F,1>{
 		ci vec<F,1>& operator o2(F b){x o2 b;return *this;}
 	OP(+, +=) OP(-, -=) OP(*, *=) OP(/, /=) OP(%, %=) OP(&, &=) OP(|, |=) OP(^, ^=) OP(<<, <<=) OP(>>, >>=)
 	#undef OP
-	template<size_t O> vec<F,O> operator*(_mat<F,O,1>& m){
+	template<size_t O> vec<F,O> operator*(const _mat<F,O,1>& m){
 		vec<F,O> a;
 		F* b = a, *i = m.data, *end = i + O;
 		for(; i < end; i++) *b++ = x * i[0];
 		return a;
 	}
-	vec<F,1>& operator*=(_mat<F,1,1>& m){
+	vec<F,1>& operator*=(const _mat<F,1,1>& m){
 		x *= m.data[0];
 		return *this;
 	}
@@ -328,7 +328,7 @@ struct _mat{
 		}
 		return a;
 	}
-	_mat<F,W,H>& operator*=(_mat<F,W,W>& v){
+	_mat<F,W,H>& operator*=(const _mat<F,W,W>& v){
 		F m[size]; memcpy(m, data, size*sizeof(F));
 		F* end = m + W*H;
 		F* vp = v;
@@ -343,9 +343,8 @@ struct _mat{
 		}
 		return *this;
 	}
-	inline _mat<F,W,H>& operator*=(_mat<F,W,W>&& v){ return operator*=(v); }
 	template<size_t W1>
-	_mat<F,W,H>& operator*=(_mat<F,W,W1>& v) requires (W1 < W){
+	_mat<F,W,H>& operator*=(const _mat<F,W,W1>& v) requires (W1 < W){
 		F m[size]; memcpy(m, data, size*sizeof(F));
 		F* end = m + W*H, *end1 = m + W1*H;
 		F* vp = v;
@@ -366,8 +365,6 @@ struct _mat{
 		}
 		return *this;
 	}
-	template<size_t W1>
-	inline _mat<F,W,H>& operator*=(_mat<F,W,W1>&& v){ return operator*=(v); }
 };
 
 template<typename F, size_t W, size_t H>
@@ -739,12 +736,12 @@ struct s_lock: atomic_flag{
 template<typename T> struct alignas(T) dummy{
 	char value[sizeof(T)];
 	ci dummy(){}
-	ci dummy(T& other){ new (value) T(other); }
+	ci dummy(const T& other){ new (value) T(other); }
 	ci dummy(T&& other){ new (value) T(other); }
-	ci dummy(dummy<T>& other){ memcpy(value, other.value, sizeof(T)); }
-	ci dummy(dummy<T>&& other){ memcpy(value, other.value, sizeof(T)); }
-	ci dummy<T>& operator=(dummy<T>& other){ memcpy(value, other.value, sizeof(T)); return *this; }
-	ci dummy<T>& operator=(dummy<T>&& other){ memcpy(value, other.value, sizeof(T)); return *this; }
+	ci dummy(const dummy<T>& other){ memcpy(value, other.value, sizeof(T)); }
+	ci dummy(const dummy<T>&& other){ memcpy(value, other.value, sizeof(T)); }
+	ci dummy<T>& operator=(const dummy<T>& other){ memcpy(value, other.value, sizeof(T)); return *this; }
+	ci dummy<T>& operator=(const dummy<T>&& other){ memcpy(value, other.value, sizeof(T)); return *this; }
 	
 	ci T& operator*(){ return *(T*)value; }
 	ci T* operator->(){ return (T*)value; }

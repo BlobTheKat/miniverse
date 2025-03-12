@@ -57,7 +57,7 @@ GLuint makePipeline(buffer vert, buffer frag){
 inline void init();
 inline void frame();
 bool pointerLocked;
-double t, dt;
+double t = 0, dt;
 struct{
 	int x, y, w, h;
 	int width, height;

@@ -9,7 +9,7 @@ uniform float t, dt;
 out vec2 pos;
 flat out lowp vec3 col1, col2, col3, col4, col5;
 flat out highp uvec2 s;
-flat out lowp vec4 values;
+flat out highp vec4 values;
 
 void variant(out vec3 col2, int a){
 	if(a < 24){
