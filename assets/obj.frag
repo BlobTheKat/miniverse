@@ -4,7 +4,7 @@ out vec4 color;
 in vec2 pos;
 flat in lowp vec3 col1, col2, col3, col4, col5;
 flat in mediump uvec2 s;
-flat in lowp vec4 values;
+flat in highp vec4 values;
 uniform sampler2D noise;
 
 float alpha(float a){return clamp(a/fwidth(a),0.,1.);}

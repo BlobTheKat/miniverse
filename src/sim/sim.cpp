@@ -94,6 +94,18 @@ struct Simulation{
 		p->cam_hw = cam_hw; p->cam_hh = cam_hh;
 		p->avail.unlock();
 	}
+	void paused_update(f64 cam_x, f64 cam_y, f64 cam_hw, f64 cam_hh){
+		UpdateParams* p = dat.params+(tick_num&1);
+		if(!p->avail.is_locked()) return;
+		tick_num++;
+		p->toAdd = toAdd; toAdd = 0;
+		p->dt = 0; p->changed = false;
+		p->res = new (malloc(sizeof(UpdateResult) + dat.thr_count*sizeof(vector<Sprite>))) UpdateResult(dat.thr_count);
+		p->res->cam_x = cam_x; p->res->cam_y = cam_y; p->res->t = -1;
+		p->cam_x = cam_x; p->cam_y = cam_y;
+		p->cam_hw = cam_hw; p->cam_hh = cam_hh;
+		p->avail.unlock();
+	}
 	UpdateResultHandle result(){
 		dat.resLock.lock();
 		UpdateResult* r = dat.latest;

@@ -105,22 +105,33 @@ inline void init(){
 		.atm_col = style::DARKEN_25, .atm_size = 2_f4,
 		.gradient = style::SMALL_WHITE
 	};
-	for(int i=200; i < 1'000'000; i++){
+	uvec2 s = style {
+		.col1 = {.2,.3,.7}, .col2 = style::HUE_240DEG,
+		.blend = style::BLEND_0, .glow = style::GLOW_0,
+		.speed = .2,
+		.noise_freq = 1_f4, .noise_stretch = 1_f4,
+		.atm_col = style::BRIGHTEN_25, .atm_size = 1.5_f4,
+		.gradient = style::MEDIUM_BLACK,
+		.col1_v_size = style::NORMAL, .col1_v = style::MicroV::DARKEN_50,
+		.col2_v_size = style::SHARP, .col2_v = style::MicroV::HUE_320
+	};
+	uvec2 s2 = style {
+		.col1 = {.7, .3, .2}, .col2 = style::HUE_15DEG,
+		.blend = style::BLEND_20, .glow = style::GLOW_0,
+		.speed = .1,
+		.noise_freq = 1_f4, .noise_stretch = 1.5_f4,
+		.atm_col = style::SAME, .atm_size = 1.25_f4,
+		.gradient = style::MEDIUM_BLACK,
+		.col1_v_size = style::NORMAL, .col1_v = style::MicroV::DARKEN_30,
+		.col2_v_size = style::SHARP, .col2_v = style::MicroV::SAT_40
+	};
+	for(int i=200; i < 100'000; i++){
 		f32 th = f32(rand()) * (PI2/RAND_MAX);
 		f32 ax = sin(th), ay = cos(th);
 		f32 dx = ay*20, dy = ax*-20;
 		f32 r = physics::fast_sqrt(i*50);
 		physics::Node& n = sim.add_node(ax*r, ay*r, 1, .1, dx, dy);
-		n.style = style {
-			.col1 = {.2,.3,.7}, .col2 = style::HUE_240DEG,
-			.blend = style::BLEND_0, .glow = style::GLOW_0,
-			.speed = .2,
-			.noise_freq = 1_f4, .noise_stretch = 1_f4,
-			.atm_col = style::BRIGHTEN_25, .atm_size = 1.5_f4,
-			.gradient = style::MEDIUM_BLACK,
-			.col1_v_size = style::NORMAL, .col1_v = style::MicroV::DARKEN_50,
-			.col2_v_size = style::SHARP, .col2_v = style::MicroV::HUE_320
-		};
+		n.style = s2;
 	}
 }
 
@@ -137,11 +148,9 @@ inline void frame(){
 	f32 a = pow(.001, dt);
 	zoom = tzoom*(1-a) + zoom*a;
 	f32 renderZoom = pow(2, zoom);
-	if(!(paused&1) || moved >= 0)
-		sim.update(paused&1 ? 0 : dt, t, cam.x, cam.y, window.w*renderZoom*.125, window.h*renderZoom*.125);
 	if(pointerLocked){
-		if(mouse) moved = 1.5;
-		moved -= dt;
+		if(mouse || !(paused&1)) moved = 1.5;
+		else moved -= dt;
 		cam -= mouse.xy*(renderZoom*.03);
 		Uint8 controls = keys[SDL_SCANCODE_W] | keys[SDL_SCANCODE_S]<<1 | keys[SDL_SCANCODE_A]<<2 | keys[SDL_SCANCODE_D]<<3 | keys[SDL_SCANCODE_EQUALS]<<4 | keys[SDL_SCANCODE_MINUS]<<5;
 		if(keys[SDL_SCANCODE_SPACE]){
@@ -157,6 +166,10 @@ inline void frame(){
 			if(controls&32) tzoom += dt*2;
 		}
 	}
+	if(!(paused&1))
+		sim.update(dt, t, cam.x, cam.y, window.w*renderZoom*.125, window.h*renderZoom*.125);
+	else if(moved >= 0)
+		sim.paused_update(cam.x, cam.y, window.w*renderZoom*.125, window.h*renderZoom*.125);
 	f32 scale = 10./(renderZoom*window.w*window.h);
 	f32 w = scale*window.h, h = scale*window.w;
 	scale = 20./(window.w*window.h);
@@ -169,12 +182,12 @@ inline void frame(){
 	glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	physics::UpdateResultHandle draw = sim.result();
 	if(draw){
-		if(!(paused&1)){
+		if(draw->t >= 0){
 			f32 difft = t - draw->t;
 			diffta += (difft-diffta)*dt*.2;
 			difft -= diffta;
 			glUniform1f(difftUni, difft);
-		}else draw->t += dt, glUniform1f(difftUni, 0);
+		}else glUniform1f(difftUni, 0);
 		glUniform1f(tUni, f32(i32(u32(t*65536)))*(1./65536.));
 		glUniform2f(xyUni, cam.x - draw->cam_x, cam.y - draw->cam_y);
 		for(int i = draw->draw_count; i;){

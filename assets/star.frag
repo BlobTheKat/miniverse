@@ -1,7 +1,7 @@
 #version 300 es
-precision mediump float;
+precision highp float;
 in vec2 pos;
-out vec4 color;
+out lowp vec4 color;
 
 vec2 uhash(uvec2 a) { 
 	uint x = ((a.x * 1597334673U) ^ (a.y * 3812015801U));

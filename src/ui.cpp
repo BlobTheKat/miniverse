@@ -48,12 +48,11 @@ struct UIMesh: mat3x2{
 		buf->add_v(xy, uv, color);
 		buf->add_v({xy.x,xy2.y}, {uv.x,uv2.y}, color+addY);
 	}
-	void add_text(string& s, vec4 col = 1, vec4 gr = 0){
+	void add_text(const string& s, vec4 col = 1, vec4 gr = 0){
 		for(char c : s){
 			ubuntu::Glyph& g = ubuntu::get_glyph(c);
 			add_rect(g.pos.xy, g.pos.zw-g.pos.xy, g.uv.xy, g.uv.zw-g.uv.xy, col, 0, gr);
 			this->translateX(g.advance);
 		}
 	}
-	inline void add_text(string&& s, vec4 col = 1, vec4 gr = 0){ return add_text(s, col, gr); }
 };
