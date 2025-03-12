@@ -5,24 +5,28 @@
 #include <iostream>
 #include "util/defs.cpp"
 
+const char top[] = "#version 410 core\n#define lowp\n#define mediump\n#define highp\n#define precision(x) void main()\n";
+
 GLuint makePipeline(buffer vert, buffer frag){
 	GLuint p = glCreateProgram();
 	GLuint v = glCreateShader(GL_VERTEX_SHADER);
 	GLuint f = glCreateShader(GL_FRAGMENT_SHADER);
-	int size = (int) vert.size;
-	glShaderSource(v, 1, &vert.data, &size);
+	int size[2] = {sizeof(top)-1, (int) vert.size};
+	const char* a[2] = {top, vert.data};
+	glShaderSource(v, 2, a, size);
 	glCompileShader(v);
-	glGetShaderiv(v, GL_INFO_LOG_LENGTH, &size);
-	size = (int) frag.size;
-	glShaderSource(f, 1, &frag.data, &size);
+	//glGetShaderiv(v, GL_INFO_LOG_LENGTH, size+1);
+	size[1] = (int) frag.size;
+	a[1] = frag.data;
+	glShaderSource(f, 2, a, size);
 	glCompileShader(f);
-	glGetShaderiv(f, GL_INFO_LOG_LENGTH, &size);
+	//glGetShaderiv(f, GL_INFO_LOG_LENGTH, size+1);
 	glAttachShader(p, v);
 	glAttachShader(p, f);
 	glLinkProgram(p);
 	#ifndef RELEASE
-	glGetProgramiv(p, GL_INFO_LOG_LENGTH, &size);
-	if(size > 0){
+	glGetProgramiv(p, GL_INFO_LOG_LENGTH, size+1);
+	if(size[1] > 0){
 		int size1; char* error;
 		glGetShaderiv(v, GL_INFO_LOG_LENGTH, &size1);
 		if(size1 > 0){
@@ -40,10 +44,10 @@ GLuint makePipeline(buffer vert, buffer frag){
 			SDL_memcpy(error+size1+32, "\x1b[m", 4);
 			goto end;
 		}
-		error = (char*) malloc(size+33);
+		error = (char*) malloc(size[1]+33);
 		SDL_memcpy(error, "GLSL program link error:\n\x1b[31m", 30);
-		glGetProgramInfoLog(p, size, NULL, error+30);
-		SDL_memcpy(error+size+29, "\x1b[m", 4);
+		glGetProgramInfoLog(p, size[1], NULL, error+30);
+		SDL_memcpy(error+size[1]+29, "\x1b[m", 4);
 		end:
 		puts(error);
 		free(error);

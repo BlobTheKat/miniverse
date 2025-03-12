@@ -1,5 +1,5 @@
-#version 300 es
-precision mediump float;
+precision(mediump float);
+
 uniform sampler2D atlas;
 uniform vec2 distRange;
 in vec2 uv; in vec4 color;

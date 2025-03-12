@@ -54,7 +54,7 @@ inline void init(){
 	glUniform1i(glGetUniformLocation(uiShader, "atlas"), 1);
 
 	glGenBuffers(1, &buf);
-	glGenVertexArrays(2, va);
+	glGenVertexArrays(3, va);
 	glBindVertexArray(va[0]);
 	glBindBuffer(GL_ARRAY_BUFFER, buf);
 	glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2);
@@ -198,7 +198,7 @@ inline void frame(){
 		}
 	}
 	glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-	glBindVertexArray(0);
+	glBindVertexArray(va[2]);
 	glUseProgram(starShader);
 	glUniform2f(whUniStar, window.w*.005, window.h*.005);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

@@ -1,5 +1,3 @@
-#version 300 es
-
 layout(location=0) in vec4 xy_dxdy;
 layout(location=1) in float radius;
 layout(location=2) in highp uvec2 style;

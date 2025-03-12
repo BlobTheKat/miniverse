@@ -1,4 +1,3 @@
-#version 300 es
 out highp vec2 pos;
 uniform highp vec2 wh;
 void main(){

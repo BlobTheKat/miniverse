@@ -1,5 +1,5 @@
-#version 300 es
-precision highp float;
+precision(highp float);
+
 in vec2 pos;
 out lowp vec4 color;
 

@@ -1,5 +1,5 @@
-#version 300 es
-precision mediump float;
+precision(mediump float);
+
 out vec4 color;
 in vec2 pos;
 flat in lowp vec3 col1, col2, col3, col4, col5;

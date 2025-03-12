@@ -32,8 +32,12 @@ done
 postbuild=./main
 OPTS=" -fsanitize=undefined -O0 -fno-omit-frame-pointer -fno-inline -rdynamic -g3"
 if [ "${ARG_RELEASE+x}" ]; then
+if [[ "$OSTYPE" == "darwin"* ]]; then
+OPTS=" -fno-rtti -O3 -Wl,-x -ffunction-sections -fdata-sections -Wl,-dead_strip -g0 -flto"
+else
 OPTS=" -fno-rtti -O3 -Wl,--strip-all -ffunction-sections -fdata-sections -Wl,--gc-sections -g0 -flto"
 postbuild="upx --best main"
+fi
 fi
 
 embed=" -Wl,--format=binary -Wl,$(find assets/*) -Wl,--format=default"

@@ -760,7 +760,7 @@ template<typename T> struct alignas(T) dummy{
 template<typename T>
 inline void check_addr(T* a){
 	uptr b = uptr(a);
-	if(b < 65536 || b > 0xffffffffffff || (b%alignof(T)) != 0) abort();
+	if(b < 65536 || b > 0xffffffffffff || (b%alignof(T)) != 0) printf("\x1b[31mInvalid address 0x%zx\n", b), __builtin_trap();
 }
 
 #undef ci

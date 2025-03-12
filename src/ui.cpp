@@ -2,7 +2,7 @@
 #include "sdl.cpp"
 
 GLuint uiShader;
-GLuint buf, va[2];
+GLuint buf, va[3];
 
 namespace ubuntu{
 #include "ubuntu.h"
