@@ -125,7 +125,7 @@ inline void init(){
 		.col1_v_size = style::NORMAL, .col1_v = style::MicroV::DARKEN_30,
 		.col2_v_size = style::SHARP, .col2_v = style::MicroV::SAT_40
 	};
-	for(int i=200; i < 100'000; i++){
+	for(int i=200; i < 1'000'000; i++){
 		f32 th = f32(rand()) * (PI2/RAND_MAX);
 		f32 ax = sin(th), ay = cos(th);
 		f32 dx = ay*20, dy = ax*-20;
@@ -151,7 +151,7 @@ inline void frame(){
 	if(pointerLocked){
 		if(mouse || !(paused&1)) moved = 1.5;
 		else moved -= dt;
-		cam -= mouse.xy*(renderZoom*.03);
+		cam -= mouse.xy*(renderZoom*.0004);
 		Uint8 controls = keys[SDL_SCANCODE_W] | keys[SDL_SCANCODE_S]<<1 | keys[SDL_SCANCODE_A]<<2 | keys[SDL_SCANCODE_D]<<3 | keys[SDL_SCANCODE_EQUALS]<<4 | keys[SDL_SCANCODE_MINUS]<<5;
 		if(keys[SDL_SCANCODE_SPACE]){
 			if(!(paused&2)) paused ^= 3;

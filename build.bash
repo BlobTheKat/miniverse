@@ -43,7 +43,7 @@ fi
 embed=" -Wl,--format=binary -Wl,$(find assets/*) -Wl,--format=default"
 if [[ "$OSTYPE" == "darwin"* ]]; then
 echo ".section __DATA,__bin_assets" > .bin/assets.s
-OPTS="$OPTS -framework CoreAudio -framework CoreFoundation -framework AudioToolbox -framework CoreGraphics -framework CoreHaptics -framework Cocoa -framework CoreVideo -framework IOKit -framework OpenGL -framework ForceFeedback -framework GameController -framework Carbon -lobjc"
+OPTS="$OPTS -framework CoreAudio -framework CoreFoundation -framework AudioToolbox -framework CoreGraphics -framework CoreHaptics -framework Cocoa -framework CoreVideo -framework IOKit -framework OpenGL -framework ForceFeedback -framework GameController -framework Carbon -lobjc -framework OpenGL -DGL_HEADERS=<OpenGL/gl3.h> -DGL_HEADERS2=<OpenGL/glext.h>"
 for name in assets/*; do
 n2="_binary_$(echo $name | tr '/.' '_')"
 echo ".globl ${n2}_start\n${n2}_start:\n.incbin \"$(echo $name | tr '\\' '\\\\' | tr '"' '\\"')\"\n.globl ${n2}_end\n${n2}_end:" >> .bin/assets.s

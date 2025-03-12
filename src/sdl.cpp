@@ -1,6 +1,13 @@
 #pragma once
 #include <SDL2/SDL.h>
+#ifdef GL_HEADERS
+#include GL_HEADERS
+#ifdef GL_HEADERS2
+#include GL_HEADERS2
+#endif
+#else
 #include <glad/glad.h>
+#endif
 #include <chrono>
 #include <iostream>
 #include "util/defs.cpp"
@@ -71,16 +78,19 @@ int keyCount;
 const Uint8* keys;
 a_lock mut;
 bool run = true;
-SDL_Window* win;
+SDL_Window* win; Uint32 winID;
 int render(void* a){
 	win = (SDL_Window*) a;
+	winID = SDL_GetWindowID(win);
 	SDL_GLContext gl = SDL_GL_CreateContext(win);
 	SDL_GL_MakeCurrent(win, gl);
+	#ifndef GL_HEADERS
 	#ifndef USE_GLES
 	if(!gladLoadGL()) return printf("Couldn't load OpenGL\n"), abort(), 0;
 	#else
 	#error GLES is unimplemented
 	if(!gladLoadGLES2()) return printf("Couldn't load OpenGL\n"), abort(), 0;
+	#endif
 	#endif
 	#ifndef RELEASE
 	printf("Loaded OpenGL %s\n", glGetString(GL_VERSION));
@@ -148,8 +158,12 @@ int main(int argc, char** argv){
 			}
 			break;
 			case SDL_MOUSEMOTION:
-			mouse.x += e.motion.xrel;
-			mouse.y -= e.motion.yrel;
+			if(winID == e.motion.windowID){
+				float dpi;
+				SDL_GetDisplayDPI(SDL_GetWindowDisplayIndex(win), &dpi, 0, 0);
+				mouse.x += e.motion.xrel*dpi;
+				mouse.y -= e.motion.yrel*dpi;
+			}
 			break;
 			case SDL_MOUSEWHEEL:
 			mouse.z += e.wheel.preciseX;
