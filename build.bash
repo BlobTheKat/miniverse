@@ -36,4 +36,18 @@ OPTS=" -fno-rtti -O3 -Wl,--strip-all -ffunction-sections -fdata-sections -Wl,--g
 postbuild="upx --best main"
 fi
 
-clang++ -Wno-unqualified-std-cast-call -Wno-deprecated -I.bin/include -Wfatal-errors -std=c++20 -Wno-overflow -fwrapv -Wno-narrowing$OPTS$DEFS src/main.cpp .bin/src/glad.c -L.bin/lib -lSDL2 -lSDL2main -ldl -pthread -Wl,--format=binary -Wl,$(find assets/*) -Wl,--format=default -o main && $postbuild
+embed=" -Wl,--format=binary -Wl,$(find assets/*) -Wl,--format=default"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+echo ".section __DATA,__bin_assets" > .bin/assets.s
+OPTS="$OPTS -framework CoreAudio -framework CoreFoundation -framework AudioToolbox -framework CoreGraphics -framework CoreHaptics -framework Cocoa -framework CoreVideo -framework IOKit -framework OpenGL -framework ForceFeedback -framework GameController -framework Carbon -lobjc"
+for name in assets/*; do
+n2="_binary_$(echo $name | tr '/.' '_')"
+echo ".globl ${n2}_start\n${n2}_start:\n.incbin \"$(echo $name | tr '\\' '\\\\' | tr '"' '\\"')\"\n.globl ${n2}_end\n${n2}_end:" >> .bin/assets.s
+export MACOSX_DEPLOYMENT_TARGET=14.6
+done
+fi
+
+clang++ -Wno-unqualified-std-cast-call -Wno-deprecated -I.bin/include -Wfatal-errors -std=c++20 -Wno-overflow -fwrapv -Wno-narrowing$OPTS$DEFS src/main.cpp .bin/src/glad.c .bin/assets.s -L.bin/lib -lSDL2 -lSDL2main -ldl -pthread -o main && $postbuild
+if [[ "$OSTYPE" == "darwin"* ]]; then
+rm -f .bin/assets.s
+rm -rf main.dSYM; fi
