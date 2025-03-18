@@ -1,0 +1,830 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		783B82572D85868400379054 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 783B82502D85868400379054 /* Assets.xcassets */; };
+		783B825A2D85868400379054 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 783B82502D85868400379054 /* Assets.xcassets */; };
+		783B825B2D85868400379054 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 783B82502D85868400379054 /* Assets.xcassets */; };
+		783B82D62D85DE7200379054 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 783B82BB2D85D97100379054 /* SDL2.framework */; };
+		783B82D72D85DE7200379054 /* SDL2.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 783B82BB2D85D97100379054 /* SDL2.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		78DEDFCE2D88B023002D23A8 /* assets.s in Sources */ = {isa = PBXBuildFile; fileRef = 78DEDFCD2D88B01E002D23A8 /* assets.s */; };
+		78DEDFCF2D88B023002D23A8 /* assets.s in Sources */ = {isa = PBXBuildFile; fileRef = 78DEDFCD2D88B01E002D23A8 /* assets.s */; };
+		78DEDFD02D88B023002D23A8 /* assets.s in Sources */ = {isa = PBXBuildFile; fileRef = 78DEDFCD2D88B01E002D23A8 /* assets.s */; };
+		78DEDFD42D88B122002D23A8 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 78DEDFD32D88B122002D23A8 /* main.cpp */; };
+		78DEDFD52D88B36B002D23A8 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 783B82B92D85D97100379054 /* SDL2.framework */; };
+		78DEDFD62D88B36B002D23A8 /* SDL2.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 783B82B92D85D97100379054 /* SDL2.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		78DEDFD82D88B36D002D23A8 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 783B82BD2D85D97100379054 /* SDL2.framework */; };
+		78DEDFD92D88B36D002D23A8 /* SDL2.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 783B82BD2D85D97100379054 /* SDL2.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		78DEDFDB2D88B3C0002D23A8 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 78DEDFD32D88B122002D23A8 /* main.cpp */; };
+		78DEDFDC2D88B3C6002D23A8 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 78DEDFD32D88B122002D23A8 /* main.cpp */; };
+		78DEDFDE2D88B435002D23A8 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 78DEDFDD2D88B435002D23A8 /* OpenGL.framework */; };
+		78DEDFE02D88B43F002D23A8 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 78DEDFDF2D88B43F002D23A8 /* OpenGLES.framework */; };
+		78DEDFE22D88B444002D23A8 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 78DEDFE12D88B444002D23A8 /* OpenGLES.framework */; };
+		78DEDFE62D88CA42002D23A8 /* LaunchScreentvOS.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 78DEDFE42D88CA42002D23A8 /* LaunchScreentvOS.storyboard */; };
+		78DEDFE72D88CA42002D23A8 /* LaunchScreeniOS.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 78DEDFE32D88CA42002D23A8 /* LaunchScreeniOS.storyboard */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		783B82B82D85D97100379054 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 783B82AA2D85D97000379054 /* SDL.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BECDF66C0761BA81005FE872;
+			remoteInfo = Framework;
+		};
+		783B82BA2D85D97100379054 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 783B82AA2D85D97000379054 /* SDL.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = A7D88B5423E2437C00DCD162;
+			remoteInfo = "Framework-iOS";
+		};
+		783B82BC2D85D97100379054 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 783B82AA2D85D97000379054 /* SDL.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = A7D88D1523E24BED00DCD162;
+			remoteInfo = "Framework-tvOS";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		783B82D82D85DE7200379054 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				783B82D72D85DE7200379054 /* SDL2.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		78DEDFD72D88B36B002D23A8 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				78DEDFD62D88B36B002D23A8 /* SDL2.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		78DEDFDA2D88B36D002D23A8 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				78DEDFD92D88B36D002D23A8 /* SDL2.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		783B82022D85865D00379054 /* miniverse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = miniverse.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		783B82172D85865D00379054 /* miniverse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = miniverse.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		783B822B2D85865D00379054 /* miniverse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = miniverse.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		783B82502D85868400379054 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		783B82802D85868400379054 /* miniverse_macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = miniverse_macOS.entitlements; sourceTree = "<group>"; };
+		783B82AA2D85D97000379054 /* SDL.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SDL.xcodeproj; path = SDL/Xcode/SDL/SDL.xcodeproj; sourceTree = "<group>"; };
+		78DEDFCD2D88B01E002D23A8 /* assets.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = assets.s; sourceTree = "<group>"; };
+		78DEDFD32D88B122002D23A8 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = ../src/main.cpp; sourceTree = "<group>"; };
+		78DEDFDD2D88B435002D23A8 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		78DEDFDF2D88B43F002D23A8 /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.2.sdk/System/Library/Frameworks/OpenGLES.framework; sourceTree = DEVELOPER_DIR; };
+		78DEDFE12D88B444002D23A8 /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS18.2.sdk/System/Library/Frameworks/OpenGLES.framework; sourceTree = DEVELOPER_DIR; };
+		78DEDFE32D88CA42002D23A8 /* LaunchScreeniOS.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreeniOS.storyboard; sourceTree = "<group>"; };
+		78DEDFE42D88CA42002D23A8 /* LaunchScreentvOS.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreentvOS.storyboard; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		783B81FF2D85865D00379054 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				783B82D62D85DE7200379054 /* SDL2.framework in Frameworks */,
+				78DEDFE02D88B43F002D23A8 /* OpenGLES.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		783B82142D85865D00379054 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				78DEDFD82D88B36D002D23A8 /* SDL2.framework in Frameworks */,
+				78DEDFE22D88B444002D23A8 /* OpenGLES.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		783B82282D85865D00379054 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				78DEDFD52D88B36B002D23A8 /* SDL2.framework in Frameworks */,
+				78DEDFDE2D88B435002D23A8 /* OpenGL.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		783B81F32D85865900379054 = {
+			isa = PBXGroup;
+			children = (
+				78DEDFD32D88B122002D23A8 /* main.cpp */,
+				783B82AA2D85D97000379054 /* SDL.xcodeproj */,
+				783B82502D85868400379054 /* Assets.xcassets */,
+				78DEDFCD2D88B01E002D23A8 /* assets.s */,
+				78DEDFE32D88CA42002D23A8 /* LaunchScreeniOS.storyboard */,
+				78DEDFE42D88CA42002D23A8 /* LaunchScreentvOS.storyboard */,
+				783B82802D85868400379054 /* miniverse_macOS.entitlements */,
+				783B82CE2D85D9BE00379054 /* Frameworks */,
+				783B82032D85865D00379054 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		783B82032D85865D00379054 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				783B82022D85865D00379054 /* miniverse.app */,
+				783B82172D85865D00379054 /* miniverse.app */,
+				783B822B2D85865D00379054 /* miniverse.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		783B82AB2D85D97000379054 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				783B82B92D85D97100379054 /* SDL2.framework */,
+				783B82BB2D85D97100379054 /* SDL2.framework */,
+				783B82BD2D85D97100379054 /* SDL2.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		783B82CE2D85D9BE00379054 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				78DEDFDF2D88B43F002D23A8 /* OpenGLES.framework */,
+				78DEDFE12D88B444002D23A8 /* OpenGLES.framework */,
+				78DEDFDD2D88B435002D23A8 /* OpenGL.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		783B82012D85865D00379054 /* miniverse iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 783B82432D85865D00379054 /* Build configuration list for PBXNativeTarget "miniverse iOS" */;
+			buildPhases = (
+				78DEDFCC2D88AF0C002D23A8 /* ShellScript */,
+				783B81FE2D85865D00379054 /* Sources */,
+				783B81FF2D85865D00379054 /* Frameworks */,
+				783B82002D85865D00379054 /* Resources */,
+				783B82D82D85DE7200379054 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "miniverse iOS";
+			packageProductDependencies = (
+			);
+			productName = "miniverse iOS";
+			productReference = 783B82022D85865D00379054 /* miniverse.app */;
+			productType = "com.apple.product-type.application";
+		};
+		783B82162D85865D00379054 /* miniverse tvOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 783B82472D85865D00379054 /* Build configuration list for PBXNativeTarget "miniverse tvOS" */;
+			buildPhases = (
+				78DEDFD12D88B094002D23A8 /* ShellScript */,
+				783B82132D85865D00379054 /* Sources */,
+				783B82142D85865D00379054 /* Frameworks */,
+				783B82152D85865D00379054 /* Resources */,
+				78DEDFDA2D88B36D002D23A8 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "miniverse tvOS";
+			packageProductDependencies = (
+			);
+			productName = "miniverse tvOS";
+			productReference = 783B82172D85865D00379054 /* miniverse.app */;
+			productType = "com.apple.product-type.application";
+		};
+		783B822A2D85865D00379054 /* miniverse macOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 783B824B2D85865D00379054 /* Build configuration list for PBXNativeTarget "miniverse macOS" */;
+			buildPhases = (
+				78DEDFD22D88B0AE002D23A8 /* ShellScript */,
+				783B82272D85865D00379054 /* Sources */,
+				783B82282D85865D00379054 /* Frameworks */,
+				783B82292D85865D00379054 /* Resources */,
+				78DEDFD72D88B36B002D23A8 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "miniverse macOS";
+			packageProductDependencies = (
+			);
+			productName = "miniverse macOS";
+			productReference = 783B822B2D85865D00379054 /* miniverse.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		783B81F42D85865900379054 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 1620;
+				TargetAttributes = {
+					783B82012D85865D00379054 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					783B82162D85865D00379054 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					783B822A2D85865D00379054 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+				};
+			};
+			buildConfigurationList = 783B81F72D85865900379054 /* Build configuration list for PBXProject "miniverse" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 783B81F32D85865900379054;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 783B82032D85865D00379054 /* Products */;
+			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 783B82AB2D85D97000379054 /* Products */;
+					ProjectRef = 783B82AA2D85D97000379054 /* SDL.xcodeproj */;
+				},
+			);
+			projectRoot = "";
+			targets = (
+				783B82012D85865D00379054 /* miniverse iOS */,
+				783B82162D85865D00379054 /* miniverse tvOS */,
+				783B822A2D85865D00379054 /* miniverse macOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		783B82B92D85D97100379054 /* SDL2.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = SDL2.framework;
+			remoteRef = 783B82B82D85D97100379054 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		783B82BB2D85D97100379054 /* SDL2.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = SDL2.framework;
+			remoteRef = 783B82BA2D85D97100379054 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		783B82BD2D85D97100379054 /* SDL2.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = SDL2.framework;
+			remoteRef = 783B82BC2D85D97100379054 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
+
+/* Begin PBXResourcesBuildPhase section */
+		783B82002D85865D00379054 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				78DEDFE72D88CA42002D23A8 /* LaunchScreeniOS.storyboard in Resources */,
+				783B82572D85868400379054 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		783B82152D85865D00379054 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				78DEDFE62D88CA42002D23A8 /* LaunchScreentvOS.storyboard in Resources */,
+				783B825A2D85868400379054 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		783B82292D85865D00379054 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				783B825B2D85868400379054 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		78DEDFCC2D88AF0C002D23A8 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"",
+			);
+			inputPaths = (
+				"$(SRCROOT)/../assets/*",
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/assets.s",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "echo \".section __DATA,__bin_assets\" > assets.s\ncd ..\nfor name in assets/*; do\nn2=\"_binary_$(echo $name | tr '/.' '_')\"\necho \".globl ${n2}_start\\n${n2}_start:\\n.incbin \\\"../$(echo $name | tr '\\\\' '\\\\\\\\' | tr '\"' '\\\\\"')\\\"\\n.globl ${n2}_end\\n${n2}_end:\" >> xcode/assets.s\ndone\n";
+		};
+		78DEDFD12D88B094002D23A8 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../assets/*",
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/assets.s",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "echo \".section __DATA,__bin_assets\" > assets.s\ncd ..\nfor name in assets/*; do\nn2=\"_binary_$(echo $name | tr '/.' '_')\"\necho \".globl ${n2}_start\\n${n2}_start:\\n.incbin \\\"../$(echo $name | tr '\\\\' '\\\\\\\\' | tr '\"' '\\\\\"')\\\"\\n.globl ${n2}_end\\n${n2}_end:\" >> xcode/assets.s\ndone\n";
+		};
+		78DEDFD22D88B0AE002D23A8 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../assets/*",
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/assets.s",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "echo \".section __DATA,__bin_assets\" > assets.s\ncd ..\nfor name in assets/*; do\nn2=\"_binary_$(echo $name | tr '/.' '_')\"\necho \".globl ${n2}_start\\n${n2}_start:\\n.incbin \\\"../$(echo $name | tr '\\\\' '\\\\\\\\' | tr '\"' '\\\\\"')\\\"\\n.globl ${n2}_end\\n${n2}_end:\" >> xcode/assets.s\ndone\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		783B81FE2D85865D00379054 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				78DEDFCE2D88B023002D23A8 /* assets.s in Sources */,
+				78DEDFD42D88B122002D23A8 /* main.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		783B82132D85865D00379054 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				78DEDFDB2D88B3C0002D23A8 /* main.cpp in Sources */,
+				78DEDFD02D88B023002D23A8 /* assets.s in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		783B82272D85865D00379054 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				78DEDFDC2D88B3C6002D23A8 /* main.cpp in Sources */,
+				78DEDFCF2D88B023002D23A8 /* assets.s in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		783B82442D85865D00379054 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZG2N9ZCLB5;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"GL_HEADERS=<OpenGLES/ES3/gl.h>",
+					"GL_HEADERS2=<OpenGLES/ES3/glext.h>",
+					"hardware_destructive_interference_size=64",
+					"DEFINE_MAIN=SDL_UIKitRunApp(argc,argv,SDL_main)",
+					"GLES_SILENCE_DEPRECATION=",
+					"USE_GLES=",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Miniverse;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDarkContent;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.3;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = blob.miniverse;
+				PRODUCT_NAME = miniverse;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		783B82452D85865D00379054 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZG2N9ZCLB5;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"GL_HEADERS=<OpenGLES/ES3/gl.h>",
+					"GL_HEADERS2=<OpenGLES/ES3/glext.h>",
+					"RELEASE=",
+					"hardware_destructive_interference_size=64",
+					"DEFINE_MAIN=SDL_UIKitRunApp(argc,argv,SDL_main)",
+					"GLES_SILENCE_DEPRECATION=",
+					"USE_GLES=",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Miniverse;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDarkContent;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.3;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = blob.miniverse;
+				PRODUCT_NAME = miniverse;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		783B82482D85865D00379054 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "tvOS App Icon & Top Shelf Image";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZG2N9ZCLB5;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"GL_HEADERS=<OpenGLES/ES3/gl.h>",
+					"GL_HEADERS2=<OpenGLES/ES3/glext.h>",
+					"hardware_destructive_interference_size=128",
+					"DEFINE_MAIN=SDL_UIKitRunApp(argc,argv,SDL_main)",
+					GLES_SILENCE_DEPRECATION,
+					USE_GLES,
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Miniverse;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Automatic;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = blob.miniverse;
+				PRODUCT_NAME = miniverse;
+				SDKROOT = appletvos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 3;
+				TVOS_DEPLOYMENT_TARGET = 15.6;
+			};
+			name = Debug;
+		};
+		783B82492D85865D00379054 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "tvOS App Icon & Top Shelf Image";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZG2N9ZCLB5;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"GL_HEADERS=<OpenGLES/ES3/gl.h>",
+					"GL_HEADERS2=<OpenGLES/ES3/glext.h>",
+					"RELEASE=",
+					"hardware_destructive_interference_size=64",
+					"DEFINE_MAIN=SDL_UIKitRunApp(argc,argv,SDL_main)",
+					GLES_SILENCE_DEPRECATION,
+					USE_GLES,
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Miniverse;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Automatic;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = blob.miniverse;
+				PRODUCT_NAME = miniverse;
+				SDKROOT = appletvos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 3;
+				TVOS_DEPLOYMENT_TARGET = 15.6;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		783B824C2D85865D00379054 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = miniverse_macOS.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZG2N9ZCLB5;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"GL_HEADERS=<OpenGL/gl3.h>",
+					"GL_HEADERS2=<OpenGL/glext.h>",
+					"hardware_destructive_interference_size=128",
+					"GL_SILENCE_DEPRECATION=",
+					"RENDER_THREAD=",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Miniverse;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = blob.miniverse;
+				PRODUCT_NAME = miniverse;
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Debug;
+		};
+		783B824D2D85865D00379054 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = miniverse_macOS.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZG2N9ZCLB5;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"GL_HEADERS=<OpenGL/gl3.h>",
+					"GL_HEADERS2=<OpenGL/glext.h>",
+					"RELEASE=",
+					"hardware_destructive_interference_size=128",
+					"GL_SILENCE_DEPRECATION=",
+					"RENDER_THREAD=",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Miniverse;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = blob.miniverse;
+				PRODUCT_NAME = miniverse;
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Release;
+		};
+		783B824E2D85865D00379054 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"GL_HEADERS=<OpenGL/gl3.h>",
+					"GL_HEADERS2=<OpenGL/glext.h>",
+					"hardware_destructive_interference_size=128",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SYSTEM_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/../.bin/include\"";
+			};
+			name = Debug;
+		};
+		783B824F2D85865D00379054 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"GL_HEADERS=<OpenGL/gl3.h>",
+					"GL_HEADERS2=<OpenGL/glext.h>",
+					"RELEASE=",
+					"hardware_destructive_interference_size=128",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SYSTEM_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/../.bin/include\"";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		783B81F72D85865900379054 /* Build configuration list for PBXProject "miniverse" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				783B824E2D85865D00379054 /* Debug */,
+				783B824F2D85865D00379054 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		783B82432D85865D00379054 /* Build configuration list for PBXNativeTarget "miniverse iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				783B82442D85865D00379054 /* Debug */,
+				783B82452D85865D00379054 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		783B82472D85865D00379054 /* Build configuration list for PBXNativeTarget "miniverse tvOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				783B82482D85865D00379054 /* Debug */,
+				783B82492D85865D00379054 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		783B824B2D85865D00379054 /* Build configuration list for PBXNativeTarget "miniverse macOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				783B824C2D85865D00379054 /* Debug */,
+				783B824D2D85865D00379054 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 783B81F42D85865900379054 /* Project object */;
+}

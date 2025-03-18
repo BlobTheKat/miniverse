@@ -23,7 +23,7 @@ void* salloc(int sz){
 void free_swap(){
 	char* a = *block_end; *block_end = 0;
 	while(a){
-		char* b = *(char**)(a+BLOCK_BYTES); page_free(a), mem -= BLOCK_SIZE<<16; a = b;
+		char* b = *(char**)(a+BLOCK_BYTES); page_free(a, BLOCK_SIZE), mem -= BLOCK_SIZE<<16; a = b;
 	}
 	a = p_old_root; p_old_root = p_root; p_root = a;
 	block = (char*) (block_end = &p_root);
@@ -32,11 +32,11 @@ void free_all(){
 	return;
 	char* a = p_root; p_root = 0;
 	while(a){
-		char* b = *(char**)(a+BLOCK_BYTES); page_free(a); a = b;
+		char* b = *(char**)(a+BLOCK_BYTES); page_free(a, BLOCK_SIZE); a = b;
 	}
 	a = p_old_root; p_old_root = 0;
 	while(a){
-		char* b = *(char**)(a+BLOCK_BYTES); page_free(a); a = b;
+		char* b = *(char**)(a+BLOCK_BYTES); page_free(a, BLOCK_SIZE); a = b;
 	}
 	block = (char*) &p_root; block_end = &p_root;
 	mem = 0;

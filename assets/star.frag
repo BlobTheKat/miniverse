@@ -1,4 +1,5 @@
 precision(highp float);
+precision(highp int);
 
 in vec2 pos;
 out lowp vec4 color;
@@ -8,7 +9,7 @@ vec2 uhash(uvec2 a) {
 	x = x * 0x7feb352du;
 	x = x ^ (x >> 15u);
 	x = x * 0x846ca68bu;
-	return vec2(x&0xffffu, (x>>15u) + (x&0xc0000000u))*.0000203450520833333;
+	return vec2(x&0xffffu, (x>>17u) + (x&0xc0000000u))*.0000203450520833333;
 }
 
 float star(vec2 p){

@@ -26,7 +26,6 @@ inline void init(){
 
 	GLfloat maxAniso = -1;
 	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAniso);
-
 	glUseProgram(objShader);
 	glUniform1i(noiseUni, 0);
 	GLuint texs[2];
@@ -36,7 +35,7 @@ inline void init(){
 	stbi_set_flip_vertically_on_load_thread(1);
 	vector<u8> data; int w, h, ch;
 	stbi_uc* img = stbi_load_from_memory((stbi_uc*) asset_start(noise_png), asset_size(noise_png), &w, &h, &ch, 1);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, img);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, img);
 	stbi_image_free(img);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 	if(maxAniso >= 0)
@@ -45,7 +44,7 @@ inline void init(){
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, texs[1]);
 	img = stbi_load_from_memory((stbi_uc*) asset_start(ubuntu_png), asset_size(ubuntu_png), &w, &h, &ch, 3);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, img);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, img);
 	stbi_image_free(img);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	uiShader = makePipeline(asset(basic_vert), asset(font_frag));
@@ -131,7 +130,7 @@ inline void init(){
 		f32 dx = ay*20, dy = ax*-20;
 		f32 r = physics::fast_sqrt(i*50);
 		physics::Node& n = sim.add_node(ax*r, ay*r, 1, .1, dx, dy);
-		n.style = s2;
+		n.style = s;
 	}
 }
 
@@ -205,7 +204,7 @@ inline void frame(){
 	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	UIMesh ui;
 	ui.scale(scale*window.h, scale*window.w);
-	ui.translate(0.2, 0.2);
+	ui.translate(2, 0.2);
 	{
 		UIMesh ui2 = ui;
 		if(draw){
@@ -223,3 +222,8 @@ inline void frame(){
 	ui.add_text("1.0", vec4(.4,.1,.9,1), vec4(.2,.2,.2,0));
 	ui.draw();
 }
+
+#ifdef DEFINE_MAIN
+#undef main
+int main(int argc, char *argv[]){ return DEFINE_MAIN; }
+#endif

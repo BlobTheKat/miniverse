@@ -40,7 +40,10 @@
 	#include <sys/types.h>
 	#include <sys/mman.h>
 	inline void* page_alloc(size_t c = 1){void* a=mmap(0, c<<16, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);if(uintptr_t(a)==-1)abort();return a;}
-	inline void page_free(void* ptr, size_t c = 1){munmap(ptr, c<<16);}
+    inline void page_free(void* ptr, size_t c = 1){munmap(ptr, c<<16);}
+
+	#include <pthread.h>
+	inline void interactive_qos(){ pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0); }
 #endif
 
 using namespace std;

@@ -20,6 +20,7 @@ struct UIBuf{
 	inline void reserve(usize a = 1){
 		if(len+a > cap) buf = (f32*) realloc(buf, (cap=max(cap,usize(1)<<(SIZE_BITS-countl_zero(a-1)))<<1)<<5);
 	}
+	~UIBuf(){ free(buf); }
 };
 
 struct UIMesh: mat3x2{

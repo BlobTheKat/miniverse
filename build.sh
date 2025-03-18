@@ -9,10 +9,11 @@ if [ ! -d .bin ]; then
 	git clone -b SDL2 https://github.com/libsdl-org/SDL --depth=1
 	sudo apt-get install libasound2-dev libpulse-dev cmake upx
 	cmake -S SDL -B SDL/build -DCMAKE_BUILD_TYPE=Release -DSDL_STATIC=ON -DSDL_SHARED=OFF -DSDL_DYNAMIC_API=OFF -DSDL_RENDER_DISABLED=ON -DSDL_RENDER_D3D=OFF -DSDL_RENDER_METAL=OFF -DSDL_VULKAN=OFF -DSDL_TEST=OFF && cmake --build SDL/build --config Release --parallel || exit
-	mv SDL/include .bin2/include/SDL2
+	cp SDL/include .bin2/include/SDL2
 	mkdir .bin2/lib
 	mv SDL/build/*.a .bin2/lib
-	rm -rf SDL
+	rm -rf SDL/build
+	mv SDL xcode
 
 	git clone https://github.com/nothings/stb
 	mkdir .bin2/include/stb
@@ -33,9 +34,10 @@ postbuild=./main
 OPTS=" -fsanitize=undefined -O0 -fno-omit-frame-pointer -fno-inline -rdynamic -g3"
 if [ "${ARG_RELEASE+x}" ]; then
 if [[ "$OSTYPE" == "darwin"* ]]; then
-OPTS=" -fno-rtti -O3 -Wl,-x -ffunction-sections -fdata-sections -Wl,-dead_strip -g0 -flto"
+OPTS=" -fno-rtti -Ofast -Wl,-x -ffunction-sections -fdata-sections -Wl,-dead_strip -g0 -flto"
+postbuild="echo Note: upx compression is not available on MacOS"
 else
-OPTS=" -fno-rtti -O3 -Wl,--strip-all -ffunction-sections -fdata-sections -Wl,--gc-sections -g0 -flto"
+OPTS=" -fno-rtti -Ofast -Wl,--strip-all -ffunction-sections -fdata-sections -Wl,--gc-sections -g0 -flto"
 postbuild="upx --best main"
 fi
 fi
@@ -47,8 +49,8 @@ OPTS="$OPTS -framework CoreAudio -framework CoreFoundation -framework AudioToolb
 for name in assets/*; do
 n2="_binary_$(echo $name | tr '/.' '_')"
 echo ".globl ${n2}_start\n${n2}_start:\n.incbin \"$(echo $name | tr '\\' '\\\\' | tr '"' '\\"')\"\n.globl ${n2}_end\n${n2}_end:" >> .bin/assets.s
-export MACOSX_DEPLOYMENT_TARGET=14.6
 done
+export MACOSX_DEPLOYMENT_TARGET=14.6
 fi
 
 clang++ -Wno-unqualified-std-cast-call -Wno-deprecated -I.bin/include -Wfatal-errors -std=c++20 -Wno-overflow -fwrapv -Wno-narrowing$OPTS$DEFS src/main.cpp .bin/src/glad.c .bin/assets.s -L.bin/lib -lSDL2 -lSDL2main -ldl -pthread -o main && $postbuild
