@@ -72,7 +72,8 @@ GLuint makePipeline(buffer vert, buffer frag){
 inline void init();
 inline void frame();
 bool pointerLocked;
-double t = 0, dt;
+uint64_t start;
+f64 t = 0, dt;
 struct{
 	int x, y, w, h;
 	int width, height;
@@ -89,6 +90,23 @@ a_lock mut;
 #else
 #define EVENT_UNLOCK
 #endif
+
+f64 audio_time = 0;
+static void audio_callback(void* sp, Uint8* st, int len){
+	const f32 freq = 440.;
+	int channels = ((SDL_AudioSpec*)sp)->channels, sz = channels<<2;
+	f64 ti = 1./f32(((SDL_AudioSpec*)sp)->freq);
+	f64 t = audio_time;
+	for(int i = 0; i < len; i += sz, t += ti){
+		f32* sample = (f32*)(st+i);
+		for(int ch = 0; ch < channels; ch++){
+			f32 phase = fmod(t*freq,1.);
+			sample[ch] = 0;//f32(phase < .5)-.5;//abs(.5-abs(.25-phase))-.25;
+		}
+	}
+	audio_time = t;
+}
+
 int render(void* a){
 	win = (SDL_Window*) a;
 	winID = SDL_GetWindowID(win);
@@ -106,10 +124,18 @@ int render(void* a){
 	#endif
 	if(SDL_GL_SetSwapInterval(-1)) SDL_GL_SetSwapInterval(1);
 	init(); 
-	uint64_t start = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+	start = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+	SDL_AudioSpec wavspec;
+	if(SDL_GetAudioDeviceSpec(0, 0, &wavspec) != 0) audio_fail: return printf("Init fail: %s\n", SDL_GetError());
+	wavspec.format = AUDIO_F32SYS;
+	wavspec.callback = audio_callback;
+   wavspec.userdata = &wavspec;
+	SDL_AudioDeviceID device = SDL_OpenAudioDevice(NULL, 0, &wavspec, NULL, 0);
+	if(!device) goto audio_fail;
+	SDL_PauseAudioDevice(device, 0);
 	while(run){
-		double ot=t;
-		t = double(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count()-start)*1e-9;
+		f64 ot=t;
+		t = f64(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count()-start)*1e-9;
 		dt = t-ot;
 		keys = SDL_GetKeyboardState(&keyCount);
 		SDL_GetWindowSize(win, &window.w, &window.h);
@@ -134,6 +160,7 @@ int render(void* a){
 		EVENT_UNLOCK;
 		SDL_GL_SwapWindow(win);
 	}
+	SDL_CloseAudioDevice(device);
 	return 0;
 }
 
@@ -171,13 +198,13 @@ inline void process_event(SDL_Event& e){ switch(e.type){
 } }
 
 int main(int argc, char** argv){
-	if(SDL_Init(SDL_INIT_EVERYTHING) < 0) return printf("Init fail: %s\n", SDL_GetError());
+	if(SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER) < 0) return printf("Init fail: %s\n", SDL_GetError());
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 32);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
 	#ifdef USE_GLES
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -188,9 +215,11 @@ int main(int argc, char** argv){
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 	#endif
 	int size; SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &size);
-	if(size < 24) SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+	if(size) SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+
 	SDL_Window* win = SDL_CreateWindow("Miniverse", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_FULLSCREEN_DESKTOP);
-	#ifdef RENDER_THREAD
+	int r;
+#ifdef RENDER_THREAD
 	SDL_Thread* rt = SDL_CreateThread(render, NULL, win);
 	while(run){
 		SDL_Event e;
@@ -199,10 +228,9 @@ int main(int argc, char** argv){
 		process_event(e);
 		mut.unlock();
 	}
-	int r;
 	SDL_WaitThread(rt, &r);
+#else
+	r = render(win);
+#endif
 	return r;
-	#else
-	return render(win);
-	#endif
 }
