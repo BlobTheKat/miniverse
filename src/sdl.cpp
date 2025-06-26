@@ -11,6 +11,7 @@
 #include <chrono>
 #include <iostream>
 #include "util/defs.cpp"
+//#include "audio.cpp"
 
 #ifdef USE_GLES
 const char top[] = "#version 300 es\n#define precision(x) precision x\n";
@@ -128,6 +129,7 @@ int render(void* a){
 	SDL_AudioSpec wavspec;
 	if(SDL_GetAudioDeviceSpec(0, 0, &wavspec) != 0) audio_fail: return printf("Init fail: %s\n", SDL_GetError());
 	wavspec.format = AUDIO_F32SYS;
+	wavspec.samples = 128;
 	wavspec.callback = audio_callback;
    wavspec.userdata = &wavspec;
 	SDL_AudioDeviceID device = SDL_OpenAudioDevice(NULL, 0, &wavspec, NULL, 0);

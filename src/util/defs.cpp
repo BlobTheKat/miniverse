@@ -1,4 +1,5 @@
 #pragma once
+#define random _c_random
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -6,6 +7,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <math.h>
+#undef random
 #include <type_traits>
 #include <tuple>
 #include <algorithm>
@@ -182,11 +184,12 @@ struct vec: _vec_c_types<F,L>{
 	static const size_t size = L;
 	using component_type = F;
 	template<typename... Ts>
-	ci vec(F a, Ts... b) : _vec_c_types<F,L>(a, b...){}
+	ci vec(F a, const Ts... b) : _vec_c_types<F,L>(a, b...){}
 	template<typename X, typename... Ts> requires (X::size > 1)
-	ci vec(X& a, Ts... b) : _vec_c_types<F,L>(a.x, a.__rest, b...){}
+	ci vec(const X& a, const Ts... b) : _vec_c_types<F,L>(a.x, a.__rest, b...){}
 	ci vec(F a) : _vec_c_types<F,L>(a, a){}
 	ci vec() : _vec_c_types<F,L>(0){}
+	ci const F& operator[](size_t i) const{return this->data[i];}
 	ci F& operator[](size_t i){return this->data[i];}
 	#define OP(o, o2, d) ci vec<F,L> operator o o2(d) const{return {o this->x o2, o this->__rest o2};}
 	OP(+,,) OP(-,,) OP(++,,) OP(--,,) OP(,++,int) OP(,--,int)
@@ -198,18 +201,15 @@ struct vec: _vec_c_types<F,L>{
 	ci bool operator!() const{return !this->x && !this->__rest;}
 	explicit ci operator bool() const{return (bool)this->x || (bool)this->__rest;}
 
-	template<typename F2>
-	ci operator vec<F2,L>(){return {(F2)this->x,this->__rest};}
-
 	//inline operator F*(){ return this->data; }
 	#define OP(o,o2) \
-		ci vec<F,L> operator o(vec<F,L> b) const{return {this->x o b.x, this->__rest o b.__rest};} \
+		ci vec<F,L> operator o(const vec<F,L>& b) const{return {this->x o b.x, this->__rest o b.__rest};} \
 		ci vec<F,L> operator o(F b) const{return {this->x o b, this->__rest o b};} \
-		ci vec<F,L>& operator o2(vec<F,L> b){this->x o2 b.x, this->__rest o2 b.__rest;return *this;} \
+		ci vec<F,L>& operator o2(const vec<F,L>& b){this->x o2 b.x, this->__rest o2 b.__rest;return *this;} \
 		ci vec<F,L>& operator o2(F b){this->x o2 b, this->__rest o2 b;return *this;}
 	OP(+, +=) OP(-, -=) OP(*, *=) OP(/, /=) OP(%, %=) OP(&, &=) OP(|, |=) OP(^, ^=) OP(<<, <<=) OP(>>, >>=)
 	#undef OP
-	template<size_t O> vec<F,O> operator*(const _mat<F,O,L>& m){
+	template<size_t O> vec<F,O> operator*(const _mat<F,O,L>& m) const{
 		vec<F,O> a;
 		F* b = a, *i = m.data, *end = i + O*L;
 		for(; i < end; i += L){
@@ -236,13 +236,12 @@ struct vec<F,1>{
 	static const size_t size = 1;
 	using component_type = F;
 	union{ F data[1]; F x; };
-	inline vec(F a = 0) : x(a){}
-	template<typename... Ts>
-	inline vec(F a, Ts...) : x(a){}
-	template<typename X, typename... Ts> requires (X::size)
-	inline vec(X& a, Ts...) : x(a.x){}
-	inline vec() : x(0){}
-	inline F& operator[](size_t i){return this->x;}
+	ci vec(F a = 0) : x(a){}
+	template<typename X> requires (X::size)
+	ci vec(const X& a) : x(a.x){}
+	ci vec() : x(0){}
+	ci const F& operator[](size_t i) const{return this->x;}
+	ci F& operator[](size_t i){return this->x;}
 	#define OP(o, o2, d) ci vec<F,1> operator o o2(d) const{return {o x o2};}
 	OP(+,,) OP(-,,) OP(++,,) OP(--,,) OP(,++,int) OP(,--,int)
 	#undef OP
@@ -251,8 +250,8 @@ struct vec<F,1>{
 	ci F length() const{return sqrt(x*x);};
 	ci bool operator!() const{return !x;}
 	ci operator bool() const{return (bool)x;}
-	ci operator F(){ return x; }
-	ci operator F*(){ return data; }
+	ci operator F() const{ return x; }
+	ci operator F*() const{ return data; }
 	#define OP(o,o2) \
 		ci vec<F,1> operator o(vec<F,1> b) const{return {x o b->x};} \
 		ci vec<F,1>& operator o2(vec<F,1> b){x o2 b->x;return *this;} \
@@ -260,7 +259,7 @@ struct vec<F,1>{
 		ci vec<F,1>& operator o2(F b){x o2 b;return *this;}
 	OP(+, +=) OP(-, -=) OP(*, *=) OP(/, /=) OP(%, %=) OP(&, &=) OP(|, |=) OP(^, ^=) OP(<<, <<=) OP(>>, >>=)
 	#undef OP
-	template<size_t O> vec<F,O> operator*(const _mat<F,O,1>& m){
+	template<size_t O> vec<F,O> operator*(const _mat<F,O,1>& m) const{
 		vec<F,O> a;
 		F* b = a, *i = m.data, *end = i + O;
 		for(; i < end; i++) *b++ = x * i[0];
@@ -321,10 +320,10 @@ struct _mat{
 		}
 		return det;
 	}
-	ci vec<F,H> operator*(vec<F,W> v){
+	ci vec<F,H> operator*(const vec<F,W>& v){
 		vec<F,H> a;
 		F* i = data, *end = i + W*H;
-		F* vp = &v[0];
+		const F* vp = &v[0];
 		for(; i < end; i += H){
 			F x = *vp++;
 			for(size_t j = 0; j < H; j++) a[j] += x * i[j];
@@ -765,5 +764,16 @@ inline void check_addr(T* a){
 	uptr b = uptr(a);
 	if(b < 65536 || b > 0xffffffffffff || (b%alignof(T)) != 0) printf("\x1b[31mInvalid address 0x%zx\n", b), __builtin_trap();
 }
+
+inline u64 random(){
+	thread_local static u64 s[2];
+	u64 s1 = s[0];
+	const u64 s0 = s[1];
+	s[0] = s0;
+	s1 ^= s1 << 23;
+	s[1] = s1 ^ s0 ^ (s1 >> 18) ^ (s0 >> 5);
+	return s[1] + s0;
+}
+inline f64 frandom(){ return f64(random())/18446744073741551616.;}
 
 #undef ci
