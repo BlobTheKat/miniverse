@@ -19,6 +19,7 @@
 #include <syncstream>
 #include <numeric>
 #include <unordered_set>
+#include <chrono>
 
 // Windows
 #ifdef _WIN32
